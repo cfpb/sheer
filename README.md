@@ -24,3 +24,9 @@ We don't want to have to anticipate what developers will want to do with our API
 We want to pre-generate (Jekyll-style) the common pages, without precluding the stuff we haven't thought of yet.
 
 Our hypothesis is that we can combine some of Jekyll's ideas with full-featured search engine (like elasticsearch), and get something powerful, flexible, productive, and fun.
+
+Status
+------------
+
+Not very impressive yet-- right now it contains a command line script that will list indexable content. The next bit will be actually shoving it into elasticsearch.
+

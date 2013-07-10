@@ -1,0 +1,24 @@
+#!python
+
+import argparse
+import os
+
+import sheer.indexer
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(prog='sheer')
+    subparsers = parser.add_subparsers()
+
+    index_parser = subparsers.add_parser('index', help='load content into Elasticsearch')
+
+    index_parser.add_argument('location')
+    index_parser.add_argument('--elasticsearch_index', '-e', 
+            default= os.environ.get('SHEER_ELASTICSEARCH_INDEX', 'http://localhost:9200/content/'))
+                
+    index_parser.set_defaults(func=sheer.indexer.index_args)
+
+    args = parser.parse_args()
+    args.func(args)
+
+    
