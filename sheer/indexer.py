@@ -1,7 +1,20 @@
 import os
+import sys
+import codecs
+import json
+import logging
+import copy
+import urlparse
 
-SPECIAL_DIRECTORIES = ['_defaults', '_queries', '_layouts']
+import requests
 
+SPECIAL_DIRECTORIES = ['_defaults', '_queries', '_layouts', '_settings']
+
+
+def read_json_file(path):
+        if os.path.exists(path):
+            with codecs.open(path, 'r','utf-8') as json_file:
+                    return json.loads(json_file.read())
 
 class Indexer(object):
     def __init__(self, path, name):
@@ -13,7 +26,17 @@ class Indexer(object):
 
 
 class DirectoryIndexer(Indexer):
-    pass
+    
+    def additional_mappings(self):
+        mapping_path = os.path.join(self.path,'mappings.json')
+        try:
+            return read_json_file(mapping_path)
+
+        except IOError:
+            logging.debug("could not read %s" % mapping_path)
+
+        except ValueError:
+            logging.debug("could not parse JSON in %s" % mapping_path)
 
 class FileIndexer(Indexer):
     pass
@@ -35,9 +58,16 @@ def path_to_type_name(path):
     return path
 
 def index_args(args):
-    index_location(args.location, args.elasticsearch_host)
+    index_location(args.location, args.elasticsearch_index)
 
 def index_location(path, es):
+    requests.delete(es) #Lame, should refactor to use ES aliases
+    settings_path = os.path.join(path,'_settings/settings.json')
+    if os.path.exists(settings_path):
+        requests.put(es, file(settings_path).read())
+    else:
+        requests.put(es)
+
     page_indexer = PageIndexer()
     indexers = [page_indexer]
 
@@ -62,6 +92,29 @@ def index_location(path, es):
             elif ext.lower() in ['md','html']: 
                 page_indexer.add(complete_path)
     if indexers:
-        print "Found indexable content:"
+        default_mapping_path = os.path.join(path, '_defaults/mappings.json')
+        if os.path.exists(default_mapping_path):
+            try:
+                default_mapping = read_json_file(default_mapping_path)
+            except ValueError:
+                sys.exit("default mapping present, but is not valid JSON")
+
+        else:
+            default_mapping = {}
+
         for indexer in indexers:
-            print indexer
+            mappings = copy.deepcopy(default_mapping)
+            if hasattr(indexer, 'additional_mappings'):
+                additional_mappings = indexer.additional_mappings()
+                if additional_mappings:
+                    for key in additional_mappings.keys():
+                        if key in mappings:
+                            mappings[key].update(additional_mappings[key])
+                        else:
+                            mappings[key] = additional_mappings[key]
+            index_url = urlparse.urljoin(es,indexer.name + '/_mapping')
+            response = requests.put(index_url, json.dumps({indexer.name:mappings}))
+            print "creating index for %s at %s [%s]" % (indexer.name, index_url, response.status_code)
+            logging.debug(response.content)
+    else:
+        print "no indexable content found"
