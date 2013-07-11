@@ -6,6 +6,7 @@ import logging
 import copy
 import urlparse
 import glob
+from csv import DictReader
 
 import requests
 
@@ -25,22 +26,20 @@ class Indexer(object):
         self.name = name
 
     def index_documents_to(self, index_url):
+        count = 0
         for document in self.documents():
             destination_path= '%s/%s' % (self.name, document['_id'])
             destination_url = urlparse.urljoin(index_url, destination_path)
             requests.put(destination_url, json.dumps(document))
+            count += 1
+            sys.stdout.write("indexed %s documents \r" % count)
+            sys.stdout.flush()
 
     def documents(self):
         return []
 
-    def __str__(self):
-        return "<{0}, {1}>".format(type(self).__name__, self.name)
+    def load_mapping_file(self, mapping_path):
 
-
-class DirectoryIndexer(Indexer):
-    
-    def additional_mappings(self):
-        mapping_path = os.path.join(self.path,'mappings.json')
         try:
             return read_json_file(mapping_path)
 
@@ -50,12 +49,35 @@ class DirectoryIndexer(Indexer):
         except ValueError:
             logging.debug("could not parse JSON in %s" % mapping_path)
 
+    def additional_mappings(self):
+        if hasattr(self, 'additional_mappings_path'):
+                mapping_path = self.additional_mappings_path()
+                return self.load_mapping_file(mapping_path)
+
+    def __str__(self):
+        return "<{0}, {1}>".format(type(self).__name__, self.name)
+
+
+class DirectoryIndexer(Indexer):
+    
+    def additional_mappings_path(self):
+        return os.path.join(self.path,'mappings.json')
+
     def documents(self):
         for document_path in glob.glob(self.path+ '/*.md'):
             yield reader.document_from_path(document_path)
 
-class FileIndexer(Indexer):
-    pass
+class CSVFileIndexer(Indexer):
+    def additional_mappings_path(self):
+        return self.path + '.mappings.json'
+
+    def documents(self):
+        with file(self.path) as csvfile:
+            next_id=1 
+            for row in  DictReader(csvfile):
+                row['_id'] = next_id
+                next_id +=1
+                yield row
 
 class PageIndexer(Indexer):
     name= "pages"
@@ -102,8 +124,9 @@ def index_location(path, es):
             if filename.startswith('_'):
                 path_no_ext= os.path.join(relative_root, basename)
                 complete_path=os.path.join(root, filename)
-                indexer= FileIndexer(complete_path, path_to_type_name(path_no_ext))
-                indexers.append(indexer)
+                if ext.lower() == '.csv':
+                    indexer= CSVFileIndexer(complete_path, path_to_type_name(path_no_ext))
+                    indexers.append(indexer)
 
             elif ext.lower() in ['md','html']: 
                 page_indexer.add(complete_path)
