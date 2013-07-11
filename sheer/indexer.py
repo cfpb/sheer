@@ -5,8 +5,11 @@ import json
 import logging
 import copy
 import urlparse
+import glob
 
 import requests
+
+from sheer import reader
 
 SPECIAL_DIRECTORIES = ['_defaults', '_queries', '_layouts', '_settings']
 
@@ -20,6 +23,15 @@ class Indexer(object):
     def __init__(self, path, name):
         self.path = path
         self.name = name
+
+    def index_documents_to(self, index_url):
+        for document in self.documents():
+            destination_path= '%s/%s' % (self.name, document['_id'])
+            destination_url = urlparse.urljoin(index_url, destination_path)
+            requests.put(destination_url, json.dumps(document))
+
+    def documents(self):
+        return []
 
     def __str__(self):
         return "<{0}, {1}>".format(type(self).__name__, self.name)
@@ -37,6 +49,10 @@ class DirectoryIndexer(Indexer):
 
         except ValueError:
             logging.debug("could not parse JSON in %s" % mapping_path)
+
+    def documents(self):
+        for document_path in glob.glob(self.path+ '/*.md'):
+            yield reader.document_from_path(document_path)
 
 class FileIndexer(Indexer):
     pass
@@ -114,7 +130,8 @@ def index_location(path, es):
                             mappings[key] = additional_mappings[key]
             index_url = urlparse.urljoin(es,indexer.name + '/_mapping')
             response = requests.put(index_url, json.dumps({indexer.name:mappings}))
-            print "creating index for %s at %s [%s]" % (indexer.name, index_url, response.status_code)
+            print "creating mapping for %s at %s [%s]" % (indexer.name, index_url, response.status_code)
+            indexer.index_documents_to(es)
             logging.debug(response.content)
     else:
         print "no indexable content found"

@@ -15,3 +15,10 @@ class testReader:
         frontmatter, text = reader.extract_frontmatter(data)
         assert(frontmatter == None)
         assert("I don't have frontmatter at all" in text)
+
+    def test_document_builder(self):
+        data = get_case_contents('post.md')
+        document = reader.document_from_str(data)
+        assert('Website' in document['categories'])
+        assert('level playing field' in document['text'])
+
