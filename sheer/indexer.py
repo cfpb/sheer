@@ -14,13 +14,14 @@ from sheer.site import Site
 from sheer import reader
 
 
-
 def read_json_file(path):
         if os.path.exists(path):
-            with codecs.open(path, 'r','utf-8') as json_file:
+            with codecs.open(path, 'r', 'utf-8') as json_file:
                     return json.loads(json_file.read())
 
+
 class Indexer(object):
+
     def __init__(self, indexable):
         self.path = indexable.physical_path
         self.name = indexable.index_name()
@@ -28,7 +29,7 @@ class Indexer(object):
     def index_documents_to(self, index_url):
         count = 0
         for document in self.documents():
-            destination_path= '%s/%s' % (self.name, document['_id'])
+            destination_path = '%s/%s' % (self.name, document['_id'])
             destination_url = urlparse.urljoin(index_url, destination_path)
             if document.get('published', True):
                 requests.put(destination_url, json.dumps(document))
@@ -62,28 +63,31 @@ class Indexer(object):
 
 
 class DirectoryIndexer(Indexer):
-    
+
     def additional_mappings_path(self):
-        return os.path.join(self.path,'mappings.json')
+        return os.path.join(self.path, 'mappings.json')
 
     def documents(self):
-        for document_path in glob.glob(self.path+ '/*.md'):
+        for document_path in glob.glob(self.path + '/*.md'):
             yield reader.document_from_path(document_path)
 
+
 class CSVFileIndexer(Indexer):
+
     def additional_mappings_path(self):
         return self.path + '.mappings.json'
 
     def documents(self):
         with file(self.path) as csvfile:
-            next_id=1 
-            for row in  DictReader(csvfile):
+            next_id = 1
+            for row in DictReader(csvfile):
                 row['_id'] = next_id
-                next_id +=1
+                next_id += 1
                 yield row
 
+
 class PageIndexer(Indexer):
-    name= "pages"
+    name = "pages"
 
     def __init__(self):
         pages = []
@@ -93,16 +97,18 @@ class PageIndexer(Indexer):
 
 
 def path_to_type_name(path):
-    path=path.replace('/_', '_')
-    path=path.replace('/', '_')
-    path=path.replace('-','_')
+    path = path.replace('/_', '_')
+    path = path.replace('/', '_')
+    path = path.replace('-', '_')
     return path
+
 
 def index_args(args):
     index_location(args.location, args.elasticsearch_index)
 
+
 def index_location(path, es):
-    settings_path = os.path.join(path,'_settings/settings.json')
+    settings_path = os.path.join(path, '_settings/settings.json')
     requests.delete(es)
     if os.path.exists(settings_path):
         requests.put(es, file(settings_path).read())
@@ -112,7 +118,7 @@ def index_location(path, es):
     page_indexer = PageIndexer()
     indexers = [page_indexer]
 
-    site= Site(path)
+    site = Site(path)
     indexables = site.indexables()
     indexers = [i.indexer() for i in indexables]
 
@@ -137,8 +143,9 @@ def index_location(path, es):
                             mappings[key].update(additional_mappings[key])
                         else:
                             mappings[key] = additional_mappings[key]
-            index_url = urlparse.urljoin(es,indexer.name + '/_mapping')
-            response = requests.put(index_url, json.dumps({indexer.name:mappings}))
+            index_url = urlparse.urljoin(es, indexer.name + '/_mapping')
+            response = requests.put(
+                index_url, json.dumps({indexer.name: mappings}))
             print "creating mapping for %s at %s [%s]" % (indexer.name, index_url, response.status_code)
             indexer.index_documents_to(es)
             logging.debug(response.content)

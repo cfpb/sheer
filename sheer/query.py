@@ -11,25 +11,23 @@ class QueryResults(object):
         self.response_dict = response_dict
 
 
-
 class Query(object):
-    
+
     def __init__(self, filename, es_index):
         self.endpoint = es_index + '_search'
         self.filename = filename
         self.__results = None
 
-    
     def search(self):
         query_dict = json.loads(file(self.filename).read())
-        search_txt=json.dumps(query_dict)
+        search_txt = json.dumps(query_dict)
         logging.debug(search_txt)
         response = requests.post(self.endpoint, search_txt)
         if response.status_code == 200:
-            self.__results=json.loads(response.text)
+            self.__results = json.loads(response.text)
         else:
             logging.debug(response.text)
-            return 
+            return
         return self.iterate_results()
 
     @property
@@ -39,7 +37,7 @@ class Query(object):
         else:
             self.search()
             return self.__results
-        
+
     def iterate_results(self):
 
         if 'hits' in self.results:
@@ -47,20 +45,17 @@ class Query(object):
                 yield hit
 
 
-
 class QueryFinder(object):
 
     def __init__(self, searchpath, request):
-        self.searchpath= searchpath
-        self.es_index= request.environ['ELASTICSEARCH_INDEX']
+        self.searchpath = searchpath
+        self.es_index = request.environ['ELASTICSEARCH_INDEX']
 
     @memoized
     def __getattr__(self, name):
 
         query_filename = name + ".json"
-        found_file= self.searchpath.find(query_filename)
+        found_file = self.searchpath.find(query_filename)
         if found_file:
             query = Query(found_file, self.es_index)
             return query
-
-

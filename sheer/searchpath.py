@@ -1,9 +1,11 @@
-import os, os.path
+import os
+import os.path
+
 
 class SearchPath(object):
+
     def __init__(self, paths):
         self.paths = paths
-
 
     def find(self, name):
         for path in self.paths:

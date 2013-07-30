@@ -34,6 +34,7 @@ def scrub_name(name):
 
 
 class Site(object):
+
     def __init__(self, path, elasticsearch_index=None):
         cwd = os.getcwd()
         self.site_root = os.path.normpath(os.path.join(cwd, path))
@@ -112,6 +113,7 @@ class AncestryMixin(object):
 
 
 class Directory(AncestryMixin):
+
     def __init__(self, physical_path, site, url, parent=None):
         self.site = site
         self.parent = parent
@@ -141,22 +143,22 @@ class Directory(AncestryMixin):
 
         base, ext = os.path.splitext(requested_path)
         canonical_ext = ext.lower()
-        
 
-        response= Response(content_type='text/html')
+        response = Response(content_type='text/html')
 
         if ext:
             mime = mimetypes.types_map.get(canonical_ext)
             if type:
-                response.headers['Content-type']= mime
+                response.headers['Content-type'] = mime
 
         if canonical_ext not in ['.html']:
-            response.body= file(requested_path, 'rb').read()
+            response.body = file(requested_path, 'rb').read()
 
         else:
-            response.charset='utf-8'
+            response.charset = 'utf-8'
             context = self.context_for_request(request)
-            response.text = render_html(requested_path, self.jinja2_environment(), context, request)
+            response.text = render_html(
+                requested_path, self.jinja2_environment(), context, request)
         return response(environ, start_response)
 
     def join_path(self, path):
@@ -194,11 +196,11 @@ class Directory(AncestryMixin):
 
     @memoized
     def jinja2_environment(self):
-        template_search_path = self.generate_searchpath('_layouts') 
-        loader = FileSystemLoader(template_search_path.paths) 
-        environment = Environment(loader=loader) 
-        
-        environment.filters['markdown']=markdown.markdown
+        template_search_path = self.generate_searchpath('_layouts')
+        loader = FileSystemLoader(template_search_path.paths)
+        environment = Environment(loader=loader)
+
+        environment.filters['markdown'] = markdown.markdown
         environment.filters['date'] = date_formatter
 
         return environment
@@ -211,12 +213,14 @@ class Directory(AncestryMixin):
     @memoized
     def queryfinder_for_request(self, request):
         searchpath = self.generate_searchpath('_queries')
-        
-        return QueryFinder(searchpath, request )
+
+        return QueryFinder(searchpath, request)
+
 
 class IndexableMixin(object):
+
     def index_name(self):
-        chain =  self.parents()[:-1]
+        chain = self.parents()[:-1]
         chain.reverse()
         chain.append(self)
         index_name = '_'.join([p.name for p in chain])
@@ -224,14 +228,18 @@ class IndexableMixin(object):
 
     def indexer(self):
         return self.indexer_class(self)
-        
+
+
 class IndexableDirectory(Directory, IndexableMixin):
-    def __init__(self,*args, **kwargs):
+
+    def __init__(self, *args, **kwargs):
         super(IndexableDirectory, self).__init__(*args, **kwargs)
         from sheer import indexer
         self.indexer_class = indexer.DirectoryIndexer
 
+
 class IndexableFile(IndexableMixin, AncestryMixin):
+
     def __init__(self, physical_path, site, parent):
         self.site = site
         self.parent = parent
@@ -241,21 +249,27 @@ class IndexableFile(IndexableMixin, AncestryMixin):
 
         from sheer import indexer
         self.indexer_class = indexer.CSVFileIndexer
-    
+
+
 def print_with_indent(indentlevel, text):
     print ' ' * indentlevel,   text
 
-def print_directory_tree(directory, indentlevel = 0):
+
+def print_directory_tree(directory, indentlevel=0):
     print_with_indent(indentlevel, directory.name)
     for indexable in directory.child_indexables:
-        print_with_indent(indentlevel+4, directory.child_indexables[indexable].name + '(indexable)')
+        print_with_indent(
+            indentlevel + 4,
+            directory.child_indexables[indexable].name + '(indexable)')
     for child_dir in directory.child_dirs:
-        print_directory_tree(directory.child_dirs[child_dir], indentlevel = indentlevel + 4)
+        print_directory_tree(directory.child_dirs[
+                             child_dir], indentlevel=indentlevel + 4)
+
 
 def inspect_site(path):
     site = Site(path)
     print_directory_tree(site.root)
 
+
 def inspect_with_args(args):
     inspect_site(args.location)
-
