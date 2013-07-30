@@ -9,3 +9,5 @@ def get_case_path(filename):
 def get_case_contents(filename):
     path = get_case_path(filename)
     return file(path).read()
+
+

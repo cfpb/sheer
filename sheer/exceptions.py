@@ -1,0 +1,3 @@
+
+class NoSuitableSourceFile(Exception):
+    pass

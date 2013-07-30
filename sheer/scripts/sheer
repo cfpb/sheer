@@ -4,14 +4,23 @@ import argparse
 import os
 import logging
 
+import sheer.site
 import sheer.indexer
-
+import sheer.server
 
 if __name__ == '__main__':
 
-    parser = argparse.ArgumentParser(prog='sheer')
+    parser = argparse.ArgumentParser(prog='sheer', description="document loader for dev server for Sheer, a publishing system")
 
     subparsers = parser.add_subparsers()
+
+    inspect_parser = subparsers.add_parser('inspect', help='show how sheer sees the site directory')
+
+    inspect_parser.add_argument('location')
+    inspect_parser.add_argument('--elasticsearch_index', '-e', 
+            default= os.environ.get('SHEER_ELASTICSEARCH_INDEX', 'http://localhost:9200/content/'))
+                
+    inspect_parser.set_defaults(func=sheer.site.inspect_with_args)
 
     index_parser = subparsers.add_parser('index', help='load content into Elasticsearch')
 
@@ -21,7 +30,17 @@ if __name__ == '__main__':
                 
     index_parser.set_defaults(func=sheer.indexer.index_args)
 
-    for p in [parser, index_parser]:
+    server_parser=subparsers.add_parser('serve', help= "serve content from elasticsearch, using configuration and templates at location")
+    server_parser.add_argument('location')
+    server_parser.add_argument('--elasticsearch_index', '-e', 
+            default= os.environ.get('SHEER_ELASTICSEARCH_INDEX', 'http://localhost:9200/content/'))
+    
+    server_parser.set_defaults(func=sheer.server.serve_wsgi_app_with_cli_args)
+
+    server_parser.add_argument('--port', '-p', 
+            default= '7000')
+
+    for p in [parser, index_parser, server_parser]:
         p.add_argument('--debug', help="print debugging output to the console", action='store_true')
 
     args = parser.parse_args()

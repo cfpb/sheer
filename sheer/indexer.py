@@ -10,9 +10,9 @@ from csv import DictReader
 
 import requests
 
+from sheer.site import Site
 from sheer import reader
 
-SPECIAL_DIRECTORIES = ['_defaults', '_queries', '_layouts', '_settings']
 
 
 def read_json_file(path):
@@ -21,19 +21,22 @@ def read_json_file(path):
                     return json.loads(json_file.read())
 
 class Indexer(object):
-    def __init__(self, path, name):
-        self.path = path
-        self.name = name
+    def __init__(self, indexable):
+        self.path = indexable.physical_path
+        self.name = indexable.index_name()
 
     def index_documents_to(self, index_url):
         count = 0
         for document in self.documents():
             destination_path= '%s/%s' % (self.name, document['_id'])
             destination_url = urlparse.urljoin(index_url, destination_path)
-            requests.put(destination_url, json.dumps(document))
-            count += 1
-            sys.stdout.write("indexed %s documents \r" % count)
-            sys.stdout.flush()
+            if document.get('published', True):
+                requests.put(destination_url, json.dumps(document))
+                count += 1
+                sys.stdout.write("indexed %s %s \r" % (count, self.name))
+                sys.stdout.flush()
+
+        sys.stdout.write("indexed %s %s \n" % (count, self.name))
 
     def documents(self):
         return []
@@ -99,8 +102,8 @@ def index_args(args):
     index_location(args.location, args.elasticsearch_index)
 
 def index_location(path, es):
-    requests.delete(es) #Lame, should refactor to use ES aliases
     settings_path = os.path.join(path,'_settings/settings.json')
+    requests.delete(es)
     if os.path.exists(settings_path):
         requests.put(es, file(settings_path).read())
     else:
@@ -109,39 +112,22 @@ def index_location(path, es):
     page_indexer = PageIndexer()
     indexers = [page_indexer]
 
-    for root, dirs, files in os.walk(path):
-        relative_root = root[len(path)+1:]
-        for dir in dirs:
-            relative_dir= '%s/%s' % (relative_root, dir)
-            complete_dir= os.path.join(path, relative_dir)
-            if dir.startswith('_') and dir not in SPECIAL_DIRECTORIES:
-                indexer = DirectoryIndexer(complete_dir, path_to_type_name(relative_dir))
-                indexers.append(indexer)
+    site= Site(path)
+    indexables = site.indexables()
+    indexers = [i.indexer() for i in indexables]
 
-        for filename in files:
-            complete_path=os.path.join(root, filename)
-            basename, ext = os.path.splitext(filename)
-            if filename.startswith('_'):
-                path_no_ext= os.path.join(relative_root, basename)
-                complete_path=os.path.join(root, filename)
-                if ext.lower() == '.csv':
-                    indexer= CSVFileIndexer(complete_path, path_to_type_name(path_no_ext))
-                    indexers.append(indexer)
+    # Load default mapping (or not)
+    default_mapping_path = os.path.join(path, '_defaults/mappings.json')
+    if os.path.exists(default_mapping_path):
+        try:
+            default_mapping = read_json_file(default_mapping_path)
+        except ValueError:
+            sys.exit("default mapping present, but is not valid JSON")
 
-            elif ext.lower() in ['md','html']: 
-                page_indexer.add(complete_path)
-    if indexers:
-        default_mapping_path = os.path.join(path, '_defaults/mappings.json')
-        if os.path.exists(default_mapping_path):
-            try:
-                default_mapping = read_json_file(default_mapping_path)
-            except ValueError:
-                sys.exit("default mapping present, but is not valid JSON")
+    else:
+        default_mapping = {}
 
-        else:
-            default_mapping = {}
-
-        for indexer in indexers:
+    for indexer in indexers:
             mappings = copy.deepcopy(default_mapping)
             if hasattr(indexer, 'additional_mappings'):
                 additional_mappings = indexer.additional_mappings()
@@ -156,5 +142,3 @@ def index_location(path, es):
             print "creating mapping for %s at %s [%s]" % (indexer.name, index_url, response.status_code)
             indexer.index_documents_to(es)
             logging.debug(response.content)
-    else:
-        print "no indexable content found"
