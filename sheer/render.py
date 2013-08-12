@@ -2,7 +2,7 @@ import templates
 import os
 import os.path
 
-from sheer import reader
+from sheer import reader, exceptions
 
 
 def render_html(physical_path, environment, context, request):
