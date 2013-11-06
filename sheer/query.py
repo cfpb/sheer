@@ -1,6 +1,7 @@
 import logging
 import json
-import requests
+
+from elasticsearch import Elasticsearch
 
 from sheer.decorators import memoized
 
@@ -13,21 +14,20 @@ class QueryResults(object):
 
 class Query(object):
 
-    def __init__(self, filename, es_index):
-        self.endpoint = es_index + '_search'
+    def __init__(self, filename, es_index='content'):
+        self.es_index = es_index
+        self.es = Elasticsearch()
         self.filename = filename
         self.__results = None
 
     def search(self):
         query_dict = json.loads(file(self.filename).read())
-        search_txt = json.dumps(query_dict)
-        logging.debug(search_txt)
-        response = requests.post(self.endpoint, search_txt)
-        if response.status_code == 200:
-            self.__results = json.loads(response.text)
-        else:
-            logging.debug(response.text)
-            return
+        query_dict['index'] = self.es_index
+        if 'fields' not in query_dict:
+            query_dict['fields'] = '*'
+        response = self.es.search(**query_dict)
+        if response:
+            self.__results = response
         return self.iterate_results()
 
     @property
@@ -42,6 +42,8 @@ class Query(object):
 
         if 'hits' in self.results:
             for hit in self.results['hits']['hits']:
+                hit.update(hit['fields'])
+                del hit['fields']
                 yield hit
 
 

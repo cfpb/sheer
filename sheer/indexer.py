@@ -8,7 +8,7 @@ import urlparse
 import glob
 from csv import DictReader
 
-import requests
+from elasticsearch import Elasticsearch
 
 from sheer.site import Site
 from sheer import reader
@@ -26,13 +26,11 @@ class Indexer(object):
         self.path = indexable.physical_path
         self.name = indexable.index_name()
 
-    def index_documents_to(self, index_url):
+    def index_documents_to(self, es):
         count = 0
         for document in self.documents():
-            destination_path = '%s/%s' % (self.name, document['_id'])
-            destination_url = urlparse.urljoin(index_url, destination_path)
             if document.get('published', True):
-                requests.put(destination_url, json.dumps(document))
+                es.create(index="content", doc_type=self.name, id = document['_id'], body=document)
                 count += 1
                 sys.stdout.write("indexed %s %s \r" % (count, self.name))
                 sys.stdout.flush()
@@ -104,16 +102,18 @@ def path_to_type_name(path):
 
 
 def index_args(args):
-    index_location(args.location, args.elasticsearch_index)
+    index_location(args.location)
 
 
-def index_location(path, es):
+def index_location(path):
     settings_path = os.path.join(path, '_settings/settings.json')
-    requests.delete(es)
+    es = Elasticsearch()
+    if es.indices.exists('content'):
+        es.indices.delete('content')
     if os.path.exists(settings_path):
-        requests.put(es, file(settings_path).read())
+        es.indices.create(index="content", body=file(settings_path).read())
     else:
-        requests.put(es)
+        es.indices.create(index="content")
 
     page_indexer = PageIndexer()
     indexers = [page_indexer]
@@ -143,9 +143,6 @@ def index_location(path, es):
                             mappings[key].update(additional_mappings[key])
                         else:
                             mappings[key] = additional_mappings[key]
-            index_url = urlparse.urljoin(es, indexer.name + '/_mapping')
-            response = requests.put(
-                index_url, json.dumps({indexer.name: mappings}))
-            print "creating mapping for %s at %s [%s]" % (indexer.name, index_url, response.status_code)
+            es.indices.put_mapping(index='content', doc_type=indexer.name, body={indexer.name:mappings})
+            print "creating mapping for %s"  % (indexer.name )
             indexer.index_documents_to(es)
-            logging.debug(response.content)

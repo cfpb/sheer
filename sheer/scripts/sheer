@@ -17,23 +17,17 @@ if __name__ == '__main__':
     inspect_parser = subparsers.add_parser('inspect', help='show how sheer sees the site directory')
 
     inspect_parser.add_argument('location')
-    inspect_parser.add_argument('--elasticsearch_index', '-e', 
-            default= os.environ.get('SHEER_ELASTICSEARCH_INDEX', 'http://localhost:9200/content/'))
                 
     inspect_parser.set_defaults(func=sheer.site.inspect_with_args)
 
     index_parser = subparsers.add_parser('index', help='load content into Elasticsearch')
 
     index_parser.add_argument('location')
-    index_parser.add_argument('--elasticsearch_index', '-e', 
-            default= os.environ.get('SHEER_ELASTICSEARCH_INDEX', 'http://localhost:9200/content/'))
                 
     index_parser.set_defaults(func=sheer.indexer.index_args)
 
     server_parser=subparsers.add_parser('serve', help= "serve content from elasticsearch, using configuration and templates at location")
     server_parser.add_argument('location')
-    server_parser.add_argument('--elasticsearch_index', '-e', 
-            default= os.environ.get('SHEER_ELASTICSEARCH_INDEX', 'http://localhost:9200/content/'))
     
     server_parser.set_defaults(func=sheer.server.serve_wsgi_app_with_cli_args)
 
@@ -51,5 +45,3 @@ if __name__ == '__main__':
         logger.setLevel(logging.DEBUG)
 
     args.func(args)
-
-    
