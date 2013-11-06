@@ -28,5 +28,10 @@ Our hypothesis is that we can combine some of Jekyll's ideas with full-featured 
 Status
 ------------
 
-Not very impressive yet-- right now it contains a command line script that will list indexable content. The next bit will be actually shoving it into elasticsearch.
+Parts of it work!
 
+sheer index *directory* will pull a sites content into Elasticsearch
+
+sheer serve *directory* launches the web server
+
+sheer inspect *directory* displays a directory tree, as seen by sheer
