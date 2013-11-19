@@ -1,6 +1,7 @@
 import templates
 import os
 import os.path
+import codecs
 
 from sheer import reader, exceptions
 
@@ -17,7 +18,7 @@ def render_html(physical_path, environment, context, request):
 
     # set up template
     if os.path.exists(physical_path):
-        templatefile = file(physical_path)
+        templatefile = codecs.open(physical_path, "r", "utf-8")
         template = environment.from_string(templatefile.read())
 
     elif markdown_exists:

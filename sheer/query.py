@@ -25,6 +25,8 @@ class Query(object):
         query_dict['index'] = self.es_index
         if 'fields' not in query_dict:
             query_dict['fields'] = '*'
+        if 'sort' not in query_dict:
+            query_dict['sort'] = "date:desc"
         response = self.es.search(**query_dict)
         if response:
             self.__results = response
