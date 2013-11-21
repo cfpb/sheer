@@ -23,14 +23,15 @@ def json_safe_dates(document):
 
 
 def annotations_from_filename(name):
+    name_no_ext = os.path.splitext(name)[0]
     date_pattern = "%Y-%m-%d"
-    date_string, remainder = name[:10], name[11:]
+    date_string, remainder = name_no_ext[:10], name_no_ext[11:]
     try:
         values = {
             'date': datetime.datetime.strptime(date_string, date_pattern),
             '_id': remainder}
     except ValueError:
-        values = {}
+        values = {'_id':name_no_ext}
     return values
 
 
