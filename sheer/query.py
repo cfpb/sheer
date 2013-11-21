@@ -20,9 +20,10 @@ class Query(object):
         self.filename = filename
         self.__results = None
 
-    def search(self):
+    def search(self, **kwargs):
         query_dict = json.loads(file(self.filename).read())
         query_dict['index'] = self.es_index
+        query_dict.update(kwargs)
         if 'fields' not in query_dict:
             query_dict['fields'] = '*'
         if 'sort' not in query_dict:
