@@ -7,7 +7,8 @@ from sheer.query import Query
 
 def handle_wsgi(environ, start_response):
     start_response('200 OK', [('content-type', 'application/json')])
-    results = Query(query_path(environ['PATH_INFO']), environ['ELASTICSEARCH_INDEX']).search()
+    query = Query(query_path(environ['PATH_INFO']), environ['ELASTICSEARCH_INDEX'])
+    results = query.search(q='date:[2013-05-04 TO 2013-08-01]')
     data = []
     for rez in results:
         data.append( rez )
