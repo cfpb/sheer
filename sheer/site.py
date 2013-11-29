@@ -92,6 +92,11 @@ class Site(object):
         environ['ELASTICSEARCH_INDEX'] = self.elasticsearch_index
         environ['SITE'] = self
 
+        import re
+        if re.match('^\/v\d+\/', environ['PATH_INFO']):
+            import sheer_api
+            return sheer_api.handle_wsgi(environ, start_response)
+
         if directory_key in self.directories:
             environ['PATH_INFO'] = environ['PATH_INFO'][len(directory_key):]
             return self.directories[directory_key].handle_wsgi(environ,
