@@ -94,7 +94,8 @@ class Site(object):
 
         import re
         if re.match('^\/v\d+\/', environ['PATH_INFO']):
-            import sheer_api
+            from sheer_api import SheerAPI
+            sheer_api = SheerAPI(self.site_root)
             return sheer_api.handle_wsgi(environ, start_response)
 
         if directory_key in self.directories:
