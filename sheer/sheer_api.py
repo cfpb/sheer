@@ -10,18 +10,14 @@ class SheerAPI(object):
 
     def __init__(self, path):
         self.site_root = path
+        self.allowed_content = ['events', 'activity', 'reports']
 
 
     def handle_wsgi(self, environ, start_response):
-        args = self.process_arguments(environ)
+        data = self.process_arguments(environ)
         # get results
-        query = Query(self.query_path(environ['PATH_INFO']), environ['ELASTICSEARCH_INDEX'])
-        #q='date:[2013-02-04 TO 2013-08-01]',
-        #sort='date:asc',
-        #fields='title,text',
-        #from_=1,
-        #size=3,
-        results = query.search( **args )
+        query = Query(self.site_root + '/_queries/' + data['content_type'] + '.json', environ['ELASTICSEARCH_INDEX'])
+        results = query.search( **data['args'] )
         data = []
         for rez in results:
             data.append(rez)
@@ -31,21 +27,24 @@ class SheerAPI(object):
 
 
     def process_arguments(self, environ):
-        # check that arg name is allowed
-        # check that arg value is allowed
-        # process path args too, ie /v1/events/:event_id
-        #  how to add to q, not overwrite it?
+        # how to add to q, not overwrite it?
+        # have allowed per content_type arguments
         fields = parse_formvars(environ)
         args = {}
+        data = {}
         for item in fields.items():
             if item[0] == 'from':
                 args['from_'] = item[1]
             else:
                 args[item[0]] = item[1]
-        args['q'] = "_id:testimony-before-senate-committee-on-banking-housing-and-urban-affairs.md"
-        return args
 
+        pattern = r'^/(?P<api_version>v\d+)/(?P<content_type>' + '|'.join(self.allowed_content) + ')/?(?P<content_id>[^\/]+)?/?(?P<remainder>.+)?$'
+        match = re.match(pattern, environ['PATH_INFO'])
 
-    def query_path(self, path_info):
-        path_info = re.sub('^\/v\d+\/', '', path_info)
-        return self.site_root + '/_queries/' + path_info + '.json'
+        groups = match.groupdict()
+        data['api_version'] = groups.get('api_version', '')
+        data['content_type'] = groups.get('content_type', '')
+        if groups['content_id']:
+            args['q'] = '_id:' + groups['content_id']
+        data['args'] = args
+        return data
