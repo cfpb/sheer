@@ -6,13 +6,13 @@ import markdown
 
 
 from sheer import reader, query, exceptions, utility, templates
-from sheer.site import Site
+from sheer.switcher import Switcher
 
 
 def serve_wsgi_app_with_cli_args(args):
         root_dir = os.path.realpath(args.location)
-        site = Site(root_dir)
-        application =  site.handle_wsgi
+        switcher = Switcher(root_dir)
+        application = switcher.handle_wsgi
         if args.debug:
             from werkzeug.debug import DebuggedApplication
             application = DebuggedApplication(application, evalex=True)

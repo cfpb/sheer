@@ -14,6 +14,7 @@ class SheerAPI(object):
 
 
     def handle_wsgi(self, environ, start_response):
+        environ['ELASTICSEARCH_INDEX'] = None
         data = self.process_arguments(environ)
         # get results
         query = Query(self.site_root + '/_queries/' + data['content_type'] + '.json', environ['ELASTICSEARCH_INDEX'])
