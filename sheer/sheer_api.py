@@ -1,5 +1,6 @@
 import json
 import re
+import os.path
 
 from paste.request import parse_formvars
 from webob import Request, Response
@@ -10,42 +11,76 @@ class SheerAPI(object):
 
     def __init__(self, path):
         self.site_root = path
+        self.start_response = None
+        self.api_version = None
         self.allowed_content = ['events', 'activity', 'reports']
+        self.content_type = None
+        self.content_id = None
+        # is a list, element 0 is a of the form '500 Internal Server Error',
+        #       element 1 is data/message, ie {'Error':'Error message goes here'}
+        #       ['500 Internal Server Error', {'Error':'This is the error message'}]
+        self.errors = None
+        self.args = {}
+        self.results = []
 
 
     def handle_wsgi(self, environ, start_response):
         environ['ELASTICSEARCH_INDEX'] = None
-        data = self.process_arguments(environ)
-        # get results
-        query = Query(self.site_root + '/_queries/' + data['content_type'] + '.json', environ['ELASTICSEARCH_INDEX'])
-        results = query.search( **data['args'] )
+        self.start_response = start_response
+
+        return self.process_arguments(environ).calculate_results(environ).return_results()
+
+
+    def check_errors(self):
+        return self.errors != None
+
+
+    def return_results(self):
+        if self.check_errors():
+            self.start_response(self.errors[0], [('content-type', 'application/json')])
+            return json.dumps(self.errors[1])
+        self.start_response('203 OK', [('content-type', 'application/json')])
+        return json.dumps(self.results)
+
+
+    def calculate_results(self, environ):
+        if self.check_errors():
+            return self
+
+        query_file = self.site_root + '/_queries/' + self.content_type + '.json'
+        if not os.path.isfile(query_file):
+            self.errors = ['501 Not Implemented', {'Error':'Sheer API handling of %s is not implemented' % self.content_type}]
+            return self
+
+        query = Query(query_file, environ['ELASTICSEARCH_INDEX'])
+        results = query.search( **self.args )
         data = []
         for rez in results:
             data.append(rez)
-        # send back response
-        start_response('200 OK', [('content-type', 'application/json')])
-        return json.dumps(data)
+        self.results = data
+        return self
 
 
     def process_arguments(self, environ):
         # how to add to q, not overwrite it?
         # have allowed per content_type arguments
         fields = parse_formvars(environ)
-        args = {}
-        data = {}
         for item in fields.items():
             if item[0] == 'from':
-                args['from_'] = item[1]
+                self.args['from_'] = item[1]
             else:
-                args[item[0]] = item[1]
+                self.args[item[0]] = item[1]
 
-        pattern = r'^/(?P<api_version>v\d+)/(?P<content_type>' + '|'.join(self.allowed_content) + ')/?(?P<content_id>[^\/]+)?/?(?P<remainder>.+)?$'
+        pattern = r'^/(?P<api_version>v\d+)/(?P<content_type>' \
+                + '|'.join(self.allowed_content) + ')/?(?P<content_id>[^\/]+)?/?(?P<remainder>.+)?$'
         match = re.match(pattern, environ['PATH_INFO'])
+        if not match:
+            self.errors = ['501 Not Implemented', {'Error':'Unknown API path'}]
+            return self
 
         groups = match.groupdict()
-        data['api_version'] = groups.get('api_version', '')
-        data['content_type'] = groups.get('content_type', '')
+        self.api_version = groups.get('api_version', '')
+        self.content_type = groups.get('content_type', '')
         if groups['content_id']:
-            args['q'] = '_id:' + groups['content_id']
-        data['args'] = args
-        return data
+            self.args['q'] = '_id:' + groups['content_id']
+        return self
