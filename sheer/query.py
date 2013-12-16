@@ -29,9 +29,12 @@ class Query(object):
         if 'sort' not in query_dict:
             query_dict['sort'] = "date:desc"
         response = self.es.search(**query_dict)
+        self.facets = []
         if response:
             self.__results = response
-        return self.iterate_results()
+            if 'facets' in response:
+                self.facets = response['facets']['tags']['terms']
+        return {'results': list(self.iterate_results()), 'facets': self.facets}
 
     @property
     def results(self):
