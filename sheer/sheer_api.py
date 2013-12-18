@@ -9,7 +9,7 @@ from sheer.query import Query
 
 class SheerAPI(object):
 
-    def __init__(self, path):
+    def __init__(self, path, permalink_map):
         self.site_root = path
         self.start_response = None
         self.api_version = None
@@ -22,6 +22,7 @@ class SheerAPI(object):
         self.errors = None
         self.args = {}
         self.results = []
+        self.permalink_map = permalink_map
 
 
     def handle_wsgi(self, environ, start_response):
@@ -53,7 +54,7 @@ class SheerAPI(object):
             return self
 
         try:
-            query = Query(query_file, environ['ELASTICSEARCH_INDEX'])
+            query = Query(query_file, self, environ['ELASTICSEARCH_INDEX'])
             results = query.search( **self.args )
             data = {}
             for rez in results:
