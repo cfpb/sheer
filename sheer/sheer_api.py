@@ -66,7 +66,7 @@ class SheerAPI(object):
 
     def add_2q(self, prepend, item):
         if item[0] == 'keyword':
-            return '%s %s:(%s)' % (prepend, '_all', item[1])
+            return '%s %s:(%s)' % (prepend, '_all', item[1].replace(',', ' '))
         if item[1].find(',') == -1:
             return "%s %s:\"%s\"" % (prepend, item[0], item[1])
         else:
