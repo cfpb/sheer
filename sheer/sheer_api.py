@@ -13,7 +13,7 @@ class SheerAPI(object):
         self.site_root = path
         self.start_response = None
         self.api_version = None
-        self.allowed_content = ['events', 'activity', 'reports']
+        self.allowed_content = ['events', 'activity', 'reports', 'search']
         self.content_type = None
         self.content_id = None
         # is a list, element 0 is a of the form '500 Internal Server Error',
@@ -64,18 +64,35 @@ class SheerAPI(object):
         return self
 
 
+    def add_2q(self, prepend, item):
+        if item[0] == 'keyword':
+            return '%s %s:(%s)' % (prepend, '_all', item[1])
+        if item[1].find(',') == -1:
+            return "%s %s:\"%s\"" % (prepend, item[0], item[1])
+        else:
+            parts = item[1].split(',')
+            join_by = '" AND ' + item[0] + ':"'
+            return "%s %s:\"%s\"" % (prepend, item[0], join_by.join( parts ))
+
+
     def process_arguments(self, environ):
-        # how to add to q, not overwrite it?
-        # have allowed per content_type arguments
+        q_args = ['tags', 'text', 'title', 'type', 'keyword']
         fields = parse_formvars(environ)
         for item in fields.items():
-            if item[0] == 'from':
+            if item[0] in q_args:
+                if item[0] == 'type':
+                    item = ('_type', item[1])
+                if 'q' not in self.args:
+                    self.args['q'] = self.add_2q('', item)
+                else:
+                    self.args['q'] += self.add_2q(' AND ', item)
+            elif item[0] == 'from':
                 self.args['from_'] = item[1]
             else:
                 self.args[item[0]] = item[1]
 
         pattern = r'^/(?P<api_version>v\d+)/(?P<content_type>' \
-                + '|'.join(self.allowed_content) + ')/?(?P<content_id>[^\/]+)?/?(?P<remainder>.+)?$'
+                + '|'.join(self.allowed_content) + ')/?'
         match = re.match(pattern, environ['PATH_INFO'])
         if not match:
             self.errors = ['501 Not Implemented', {'Error':'Unknown API path'}]
@@ -84,6 +101,5 @@ class SheerAPI(object):
         groups = match.groupdict()
         self.api_version = groups.get('api_version', '')
         self.content_type = groups.get('content_type', '')
-        if groups['content_id']:
-            self.args['q'] = '_id:' + groups['content_id']
+
         return self
