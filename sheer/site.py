@@ -2,6 +2,8 @@ import os
 import os.path
 
 import mimetypes
+import json
+import codecs
 
 from webob import Request, Response
 from jinja2 import FileSystemLoader, Environment
@@ -13,7 +15,7 @@ from sheer.decorators import memoized
 from sheer.query import QueryFinder
 from sheer.searchpath import SearchPath
 
-
+PERMALINKS_JSON_PATH = '_settings/permalinks.json'
 SPECIAL_DIRECTORIES = ['_defaults',
                        '_queries',
                        '_layouts',
@@ -40,6 +42,14 @@ class Site(object):
         self.site_root = os.path.normpath(os.path.join(cwd, path))
         self.elasticsearch_index = elasticsearch_index
         self.directories = {}
+
+        if os.path.exists(PERMALINKS_JSON_PATH):
+            permalinks_file = codecs.open(PERMALINKS_JSON_PATH, encoding='utf8')
+            self.permalink_map = json.loads(permalinks_file.read())
+
+        else:
+            self.permalink_map = {}
+
 
         for here, dirs, files in os.walk(self.site_root):
             filter_out_special_dirs(dirs)
@@ -214,7 +224,7 @@ class Directory(AncestryMixin):
     def queryfinder_for_request(self, request):
         searchpath = self.generate_searchpath('_queries')
 
-        return QueryFinder(searchpath, request)
+        return QueryFinder(searchpath, request, self.site)
 
 
 class IndexableMixin(object):
