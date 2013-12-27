@@ -29,7 +29,7 @@ class SheerAPI(object):
         environ['ELASTICSEARCH_INDEX'] = None
         self.start_response = start_response
 
-        return self.process_arguments(environ).calculate_results(environ).return_results()
+        return self.process_arguments(environ, parse_formvars(environ)).calculate_results(environ).return_results()
 
 
     def check_errors(self):
@@ -55,11 +55,7 @@ class SheerAPI(object):
 
         try:
             query = Query(query_file, self, environ['ELASTICSEARCH_INDEX'])
-            results = query.search( **self.args )
-            data = {}
-            for rez in results:
-                data[rez] = results[rez]
-            self.results = data
+            self.results = query.search( **self.args )
         except Exception as e:
             self.errors = ['500 Internal Server Error', {'Error':'%s' % e}]
         return self
@@ -76,9 +72,8 @@ class SheerAPI(object):
             return "%s %s:\"%s\"" % (prepend, item[0], join_by.join( parts ))
 
 
-    def process_arguments(self, environ):
+    def process_arguments(self, environ, fields):
         q_args = ['tags', 'text', 'title', 'type', 'keyword']
-        fields = parse_formvars(environ)
         for item in fields.items():
             if item[0] in q_args:
                 if item[0] == 'type':
