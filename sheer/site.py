@@ -34,7 +34,7 @@ def scrub_name(name):
 
 class Site(object):
 
-    def __init__(self, path, permalink_map, elasticsearch_index=None):
+    def __init__(self, path, permalink_map=None, elasticsearch_index=None):
         cwd = os.getcwd()
         self.site_root = os.path.normpath(os.path.join(cwd, path))
         self.elasticsearch_index = elasticsearch_index

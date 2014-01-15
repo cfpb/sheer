@@ -6,6 +6,8 @@ import logging
 import copy
 import urlparse
 import glob
+import importlib
+
 from csv import DictReader
 
 from elasticsearch import Elasticsearch
@@ -30,7 +32,10 @@ class Indexer(object):
         count = 0
         for document in self.documents():
             if document.get('published', True):
-                es.create(index="content", doc_type=self.name, id = document['_id'], body=document)
+                es.create(index="content",
+                          doc_type=self.name,
+                          id=document['_id'],
+                          body=document)
                 count += 1
                 sys.stdout.write("indexed %s %s \r" % (count, self.name))
                 sys.stdout.flush()
@@ -94,6 +99,18 @@ class PageIndexer(Indexer):
         self.pages.append(path)
 
 
+class CustomIndexer(Indexer):
+    def __init__(self, name, **kwargs):
+        self.name=name
+        self.processor_name = kwargs['processor']
+        del kwargs['processor']
+        self.processor_module = importlib.import_module(self.processor_name)
+        self.kwargs = kwargs
+
+    def documents(self):
+        return self.processor_module.documents(self.name,**self.kwargs)
+
+        
 def path_to_type_name(path):
     path = path.replace('/_', '_')
     path = path.replace('/', '_')
@@ -105,9 +122,15 @@ def index_args(args):
     index_location(args.location)
 
 
+
 def index_location(path):
+
     settings_path = os.path.join(path, '_settings/settings.json')
+    default_mapping_path = os.path.join(path, '_defaults/mappings.json')
+    custom_processors_path = os.path.join('_settings/custom_processors.json')
+
     es = Elasticsearch()
+
     if es.indices.exists('content'):
         es.indices.delete('content')
     if os.path.exists(settings_path):
@@ -122,8 +145,13 @@ def index_location(path):
     indexables = site.indexables()
     indexers = [i.indexer() for i in indexables]
 
+    custom_processors = read_json_file(custom_processors_path)
+    if custom_processors:
+        for name, details in custom_processors.iteritems():
+            indexer = CustomIndexer(name, **details)
+            indexers.append(indexer)
+
     # Load default mapping (or not)
-    default_mapping_path = os.path.join(path, '_defaults/mappings.json')
     if os.path.exists(default_mapping_path):
         try:
             default_mapping = read_json_file(default_mapping_path)
