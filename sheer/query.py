@@ -1,8 +1,13 @@
+import os
+import codecs
 import logging
 import json
 
 import uritemplate
 from elasticsearch import Elasticsearch
+
+from time import mktime, strptime
+from datetime import datetime
 
 from sheer.decorators import memoized
 
@@ -21,6 +26,7 @@ class Query(object):
         self.filename = filename
         self.site=site
         self.__results = None
+        self.read_default_mappings()
 
     def search(self, **kwargs):
         query_dict = json.loads(file(self.filename).read())
@@ -47,10 +53,31 @@ class Query(object):
             self.search()
             return self.__results
 
-    def iterate_results(self):
+    def read_default_mappings(self):
+        default_mapping_path = '_defaults/mappings.json'
+        # Load default mapping (or not)
+        if os.path.exists(default_mapping_path):
+            try:
+                with codecs.open(default_mapping_path, 'r', 'utf-8') as json_file:
+                    default_mapping = json.loads(json_file.read())
+                    self.default_mapping = default_mapping['properties']
+            except ValueError:
+                sys.exit("default mapping present, but is not valid JSON")
+        else:
+            self.default_mapping = {}
 
+
+    def convert_datatypes(self, hit):
+        for field in hit['fields']:
+            if field in self.default_mapping and self.default_mapping[field]['type'] == 'date':
+                # Can't read dates with time w/ milliseconds, so am working with substring
+                time_obj = strptime(hit['fields'][field][:19], '%Y-%m-%dT%H:%M:%S')
+                hit['fields'][field] = datetime.fromtimestamp( mktime(time_obj) )
+
+    def iterate_results(self):
         if 'hits' in self.results:
             for hit in self.results['hits']['hits']:
+                self.convert_datatypes(hit)
                 hit.update(hit['fields'])
                 del hit['fields']
                 if hit['_type'] in self.site.permalink_map:
