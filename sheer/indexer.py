@@ -110,7 +110,7 @@ class CustomIndexer(Indexer):
     def documents(self):
         return self.processor_module.documents(self.name,**self.kwargs)
 
-        
+
 def path_to_type_name(path):
     path = path.replace('/_', '_')
     path = path.replace('/', '_')
