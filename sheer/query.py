@@ -5,6 +5,7 @@ import json
 
 import uritemplate
 from elasticsearch import Elasticsearch
+import dateutil.parser
 
 from time import mktime, strptime
 from datetime import datetime
@@ -20,12 +21,13 @@ class QueryResults(object):
 
 class Query(object):
 
-    def __init__(self, filename, site, es_index='content'):
+    def __init__(self, filename, site, es_index='content', json_safe=False):
         self.es_index = es_index
         self.es = Elasticsearch()
         self.filename = filename
         self.site=site
         self.__results = None
+        self.json_safe = json_safe
         self.read_default_mappings()
 
     def search(self, **kwargs):
@@ -66,13 +68,15 @@ class Query(object):
         else:
             self.default_mapping = {}
 
-
     def convert_datatypes(self, hit):
+
+        if self.json_safe:
+            return
+
         for field in hit['fields']:
             if field in self.default_mapping and self.default_mapping[field]['type'] == 'date':
-                # Can't read dates with time w/ milliseconds, so am working with substring
-                time_obj = strptime(hit['fields'][field][:19], '%Y-%m-%dT%H:%M:%S')
-                hit['fields'][field] = datetime.fromtimestamp( mktime(time_obj) )
+                time_obj = dateutil.parser.parse(hit['fields'][field])
+                hit['fields'][field] = time_obj
 
     def iterate_results(self):
         if 'hits' in self.results:

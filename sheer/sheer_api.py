@@ -54,7 +54,7 @@ class SheerAPI(object):
             return self
 
         try:
-            query = Query(query_file, self, environ['ELASTICSEARCH_INDEX'])
+            query = Query(query_file, self, environ['ELASTICSEARCH_INDEX'], json_safe=True)
             self.results = query.search( **self.args )
         except Exception as e:
             self.errors = ['500 Internal Server Error', {'Error':'%s' % e}]
