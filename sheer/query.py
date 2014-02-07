@@ -73,6 +73,8 @@ class Query(object):
         if self.json_safe:
             return
 
+        if 'fields' not in hit:
+            return
         for field in hit['fields']:
             if field in self.default_mapping and self.default_mapping[field]['type'] == 'date':
                 time_obj = dateutil.parser.parse(hit['fields'][field])
