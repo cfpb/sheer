@@ -6,6 +6,8 @@ import os.path
 
 FRONTMATTER = re.compile(r'^\s*---(.*)---\s*$', flags=re.MULTILINE | re.S)
 
+#TODO this will get moved to the filesystem processor module
+
 
 def extract_frontmatter(data):
     match = FRONTMATTER.match(data)

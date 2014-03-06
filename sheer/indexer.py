@@ -23,6 +23,7 @@ def read_json_file(path):
 
 
 class Indexer(object):
+    # TODO: This will become a new processor, "filesystem"
 
     def __init__(self, indexable):
         self.path = indexable.physical_path

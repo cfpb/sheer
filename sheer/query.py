@@ -20,12 +20,13 @@ class QueryResults(object):
 
 
 class Query(object):
+    #TODO: This no longer respects the elasticsearch URL passed in on the CLI
 
     def __init__(self, filename, site, es_index='content', json_safe=False):
         self.es_index = es_index
         self.es = Elasticsearch()
         self.filename = filename
-        self.site=site
+        self.site = site
         self.__results = None
         self.json_safe = json_safe
         self.read_default_mappings()
@@ -56,6 +57,8 @@ class Query(object):
             return self.__results
 
     def read_default_mappings(self):
+        #TODO not sure this needs to exist
+
         default_mapping_path = '_defaults/mappings.json'
         # Load default mapping (or not)
         if os.path.exists(default_mapping_path):
