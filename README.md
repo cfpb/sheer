@@ -23,7 +23,7 @@ We don't want to have to anticipate what developers will want to do with our API
 , or which collection of content people will want to subscribe to with RSS. 
 We want to pre-generate (Jekyll-style) the common pages, without precluding the stuff we haven't thought of yet.
 
-Our hypothesis is that we can combine some of Jekyll's ideas with full-featured search engine (like elasticsearch), and get something powerful, flexible, productive, and fun.
+Our hypothesis is that we can combine some of Jekyll's ideas with a full-featured search engine, and get something powerful, flexible, productive, and fun.
 
 Status
 ------------
