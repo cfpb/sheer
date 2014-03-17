@@ -7,6 +7,7 @@ from webob import Request, Response
 
 from sheer.query import Query
 
+
 class SheerAPI(object):
 
     def __init__(self, path, permalink_map):
@@ -24,17 +25,14 @@ class SheerAPI(object):
         self.results = []
         self.permalink_map = permalink_map
 
-
     def handle_wsgi(self, environ, start_response):
         environ['ELASTICSEARCH_INDEX'] = None
         self.start_response = start_response
 
         return self.process_arguments(environ, parse_formvars(environ)).calculate_results(environ).return_results()
 
-
     def check_errors(self):
-        return self.errors != None
-
+        return self.errors is not None
 
     def return_results(self):
         if self.check_errors():
@@ -43,23 +41,25 @@ class SheerAPI(object):
         self.start_response('203 OK', [('content-type', 'application/json')])
         return json.dumps(self.results)
 
-
     def calculate_results(self, environ):
         if self.check_errors():
             return self
 
         query_file = self.site_root + '/_queries/' + self.content_type + '.json'
         if not os.path.isfile(query_file):
-            self.errors = ['501 Not Implemented', {'Error':'Sheer API handling of %s is not implemented' % self.content_type}]
+            self.errors = ['501 Not Implemented', {'Error': 'Sheer API handling of %s is not implemented' % self.content_type}]
             return self
 
         try:
             query = Query(query_file, self, environ['ELASTICSEARCH_INDEX'], json_safe=True)
-            self.results = query.search( **self.args )
+            self.results = query.search(**self.args)
+            if hasattr(self, 'fields'):
+                self.fields.append('_id')
+                for ndx, result in enumerate(self.results['results']):
+                    self.results['results'][ndx] = {key: result.get(key, None) for key in self.fields}
         except Exception as e:
-            self.errors = ['500 Internal Server Error', {'Error':'%s' % e}]
+            self.errors = ['500 Internal Server Error', {'Error': '%s' % e}]
         return self
-
 
     def add_2q(self, prepend, item):
         if item[0] == 'keyword':
@@ -69,8 +69,7 @@ class SheerAPI(object):
         else:
             parts = item[1].split(',')
             join_by = '" AND ' + item[0] + ':"'
-            return "%s %s:\"%s\"" % (prepend, item[0], join_by.join( parts ))
-
+            return "%s %s:\"%s\"" % (prepend, item[0], join_by.join(parts))
 
     def process_arguments(self, environ, fields):
         q_args = ['tags', 'text', 'title', 'type', 'keyword']
@@ -82,16 +81,24 @@ class SheerAPI(object):
                     self.args['q'] = self.add_2q('', item)
                 else:
                     self.args['q'] += self.add_2q(' AND ', item)
-            elif item[0] == 'from':
+            elif item[0] == 'from' or item[0] == 'offset':
                 self.args['from_'] = item[1]
+            elif item[0] == 'limit':
+                self.args['size'] = item[1]
+            elif item[0] == 'page_no':
+                self.page_no = abs(int(item[1])) - 1
+            elif item[0] == 'fields':
+                self.fields = item[1].split(',')
             else:
                 self.args[item[0]] = item[1]
+        else:
+            if hasattr(self, 'page_no'):
+                self.args['from_'] = self.page_no * int(self.args.get('size', 10))
 
-        pattern = r'^/(?P<api_version>v\d+)/(?P<content_type>' \
-                + '|'.join(self.allowed_content) + ')/?'
+        pattern = r'^/(?P<api_version>v\d+)/(?P<content_type>' + '|'.join(self.allowed_content) + ')/?'
         match = re.match(pattern, environ['PATH_INFO'])
         if not match:
-            self.errors = ['501 Not Implemented', {'Error':'Unknown API path'}]
+            self.errors = ['501 Not Implemented', {'Error': 'Unknown API path'}]
             return self
 
         groups = match.groupdict()
