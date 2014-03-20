@@ -12,8 +12,9 @@ PERMALINKS_JSON_PATH = '_settings/permalinks.json'
 
 class Switcher(object):
 
-    def __init__(self, path):
+    def __init__(self, path, app):
         self.site_root = path
+        self.app = app
 
         if os.path.exists(PERMALINKS_JSON_PATH):
             permalinks_file = codecs.open(PERMALINKS_JSON_PATH, encoding='utf8')
@@ -29,6 +30,6 @@ class Switcher(object):
             return sheer_api.handle_wsgi(environ, start_response)
 
         site = Site(self.site_root, self.permalink_map)
-        return site.handle_wsgi(environ, start_response)
+        return self.app(environ, start_response)
 
 
