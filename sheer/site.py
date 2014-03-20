@@ -1,6 +1,7 @@
 import os
 import os.path
-
+import json
+import codecs
 import mimetypes
 
 from webob import Request, Response
@@ -20,6 +21,9 @@ SPECIAL_DIRECTORIES = ['_defaults',
                        '.git']
 
 
+PERMALINKS_JSON_PATH = '_settings/permalinks.json'
+
+
 def filter_out_special_dirs(dirs):
     for special in SPECIAL_DIRECTORIES:
         if special in dirs:
@@ -34,12 +38,20 @@ def scrub_name(name):
 
 class Site(object):
 
-    def __init__(self, path, permalink_map=None, elasticsearch_index=None):
+    def __init__(self, path, elasticsearch_index=None):
         cwd = os.getcwd()
         self.site_root = os.path.normpath(os.path.join(cwd, path))
         self.elasticsearch_index = elasticsearch_index
         self.directories = {}
-        self.permalink_map = permalink_map
+
+        full_permalinks_json_path = os.path.join(PERMALINKS_JSON_PATH)
+
+        if os.path.exists(full_permalinks_json_path):
+            permalinks_file = codecs.open(PERMALINKS_JSON_PATH, encoding='utf8')
+            self.permalink_map = json.loads(permalinks_file.read())
+
+        else:
+            self.permalink_map = {}
 
 
         for here, dirs, files in os.walk(self.site_root):

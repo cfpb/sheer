@@ -11,6 +11,7 @@ from time import mktime, strptime
 from datetime import datetime
 
 from sheer.decorators import memoized
+from sheer.utility import find_in_search_path
 
 
 class QueryResults(object):
@@ -78,10 +79,15 @@ class Query(object):
 
         if 'fields' not in hit:
             return
-        for field in hit['fields']:
-            if field in self.default_mapping and self.default_mapping[field]['type'] == 'date':
-                time_obj = dateutil.parser.parse(hit['fields'][field])
-                hit['fields'][field] = time_obj
+
+        fields = hit['fields']
+        for key, data in fields.iteritems():
+            if type(data) == list and len(data) == 1:
+                fields[key] = data[0]
+                data = data[0]
+            if key in self.default_mapping and self.default_mapping[key]['type'] == 'date':
+                time_obj = dateutil.parser.parse(data)
+                fields[key] = time_obj
 
     def iterate_results(self):
         if 'hits' in self.results:
@@ -100,13 +106,14 @@ class QueryFinder(object):
     def __init__(self, searchpath, request, site):
         self.searchpath = searchpath
         self.site = site
-        self.es_index = request.environ['ELASTICSEARCH_INDEX']
+        self.es_index = request.environ.get('ELASTICSEARCH_INDEX', 'content')
+        # TODO must respect global config!
 
     @memoized
     def __getattr__(self, name):
 
         query_filename = name + ".json"
-        found_file = self.searchpath.find(query_filename)
+        found_file = find_in_search_path(query_filename, self.searchpath)
         if found_file:
             query = Query(found_file, self.site, self.es_index)
             return query
