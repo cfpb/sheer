@@ -3,7 +3,7 @@ Sheer
 
 Sheer will contain:
 
-- Tools for loading arbitrary content (via the [processors](https://github.com/rosskarchner/sheer/wiki/Extending-Sheer#processors) into elsaticsearch.
+- Tools for loading arbitrary content (via the [processors](https://github.com/rosskarchner/sheer/wiki/Extending-Sheer#processors) into elasticsearch.
 - a web server that combines on-disk configuration and templates with data in elasticsearch, and [other API's](https://github.com/rosskarchner/sheer/wiki/Extending-Sheer#lookup).
 - scripts for pre-generating HTML from said configuration and elasticsearch data.
 
