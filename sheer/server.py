@@ -3,7 +3,6 @@ import mimetypes
 import logging
 
 from .wsgi import app_with_config
-from .switcher import Switcher
 
 
 
@@ -16,6 +15,4 @@ def serve_wsgi_app_with_cli_args(args):
         if args.debug:
             application.debug = True
 
-        from paste import httpserver
-        application = Switcher(root_dir, application).handle_wsgi
-        httpserver.serve(application, host='127.0.0.1', port=args.port)
+        application.run(port=int(args.port))

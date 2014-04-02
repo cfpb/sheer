@@ -1,19 +1,35 @@
-from wordpress_json_api import read_url
+import sys
+import json
+import requests
+
+def posts_at_url(url):
+    
+    current_page = 1
+    max_page = sys.maxint
+
+    while current_page <= max_page:
+
+        resp = requests.get(url, params={'json':1,'page':current_page})
+        results = json.loads(resp.content) 
+        current_page += 1
+        max_page = results['pages']
+        for p in results['posts']:
+            yield p
+     
+
 
 def documents(name, url):
-    # import pdb;pdb.set_trace()
-    results = read_url(url)
-    return process_data(results)
+    
+    for post in posts_at_url(url):
+        yield process_post(post)
 
-def process_data(data):
-    for ndx, value in enumerate(data):
-        value['_id'] = value['slug']
-        # remove fields we're not interested in
-        for cat in value['categories']:
-            del cat['id']
-            del cat['parent']
-            del cat['post_count']
-        del value['author']['id']
-        del value['id']
-        data[ndx] = value
-    return data
+def process_post(post):
+    post['_id'] = post['slug']
+    # remove fields we're not interested in
+    for cat in post['categories']:
+        del cat['id']
+        del cat['parent']
+        del cat['post_count']
+    del post['author']['id']
+    del post['id']
+    return post

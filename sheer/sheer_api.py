@@ -50,16 +50,17 @@ class SheerAPI(object):
             self.errors = ['501 Not Implemented', {'Error': 'Sheer API handling of %s is not implemented' % self.content_type}]
             return self
 
-        try:
-            query = Query(query_file, self, environ['ELASTICSEARCH_INDEX'], json_safe=True)
-            self.results = query.search(**self.args)
-            if hasattr(self, 'fields'):
-                self.fields.append('_id')
-                for ndx, result in enumerate(self.results['results']):
-                    self.results['results'][ndx] = {key: result.get(key, None) for key in self.fields}
-        except Exception as e:
-            self.errors = ['500 Internal Server Error', {'Error': '%s' % e}]
-        return self
+        #try:
+        query = Query(query_file)
+        query.json_safe = True
+        self.results = query.search(**self.args)
+        if hasattr(self, 'fields'):
+            self.fields.append('_id')
+            for ndx, result in enumerate(self.results['results']):
+                self.results['results'][ndx] = {key: result.get(key, None) for key in self.fields}
+        #except Exception as e:
+        #    self.errors = ['500 Internal Server Error', {'Error': '%s' % e}]
+        #return self
 
     def add_2q(self, prepend, item):
         if item[0] == 'keyword':

@@ -3,11 +3,12 @@ import os.path
 import re
 import functools
 
-from .templates import SheerTemplateLoader
+from jinja2.loaders import FileSystemLoader
+from .lookups import add_lookups_to_sheer
+from .apis import add_apis_to_sheer
 
 import flask
 
-import sheer.site
 from .templates import date_formatter
 
 from .views import handle_request
@@ -23,7 +24,6 @@ class Sheer(flask.Flask):
     def __init__(self,  *args, **kwargs):
         if 'sheer_root' in kwargs:
             self.root_dir = kwargs.get('sheer_root')
-            self.site = sheer.site.Site(self.root_dir)
             del kwargs['sheer_root']
         
         super(Sheer, self).__init__(*args, **kwargs)
@@ -37,7 +37,7 @@ class Sheer(flask.Flask):
                                         include_start_directory=True)
 
         print "\a"
-        return SheerTemplateLoader(search_path)
+        return FileSystemLoader(search_path)
 
 
 def should_ignore_this_path(pathname):
@@ -80,11 +80,13 @@ def app_with_config(root_dir):
         search_path = build_search_path(app.root_dir,
                                         flask.request.path,
                                         append='_queries')
-        context = {'queries' : QueryFinder(search_path, flask.request, app.site)}
+        context = {'queries' : QueryFinder(search_path, flask.request)}
         return context
         
     @app.template_filter(name='date')
     def date_filter(value, format="%Y-%m-%d"):
         return date_formatter(value,format)
         
+    add_lookups_to_sheer(app)
+    add_apis_to_sheer(app)
     return app

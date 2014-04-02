@@ -4,7 +4,6 @@ import argparse
 import os
 import logging
 
-import sheer.site
 import sheer.indexer
 import sheer.server
 
@@ -13,12 +12,6 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog='sheer', description="document loader for dev server for Sheer, a publishing system")
 
     subparsers = parser.add_subparsers()
-
-    inspect_parser = subparsers.add_parser('inspect', help='show how sheer sees the site directory')
-
-    inspect_parser.add_argument('location')
-                
-    inspect_parser.set_defaults(func=sheer.site.inspect_with_args)
 
     index_parser = subparsers.add_parser('index', help='load content into Elasticsearch')
 
@@ -43,5 +36,8 @@ if __name__ == '__main__':
     if args.debug:
         logger = logging.getLogger("")
         logger.setLevel(logging.DEBUG)
+        tracer = logging.getLogger('elasticsearch.trace')
+        tracer.setLevel(logging.DEBUG)
+        tracer.addHandler(logging.FileHandler('/tmp/elasticsearch-py.sh'))
 
     args.func(args)

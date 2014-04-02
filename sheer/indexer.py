@@ -2,9 +2,7 @@ import os
 import sys
 import codecs
 import json
-import logging
 import copy
-import urlparse
 import glob
 import importlib
 
@@ -12,8 +10,7 @@ from csv import DictReader
 
 from elasticsearch import Elasticsearch
 
-from sheer.site import Site
-from sheer import reader
+DO_NOT_INDEX = ['_settings/', '_layouts/', '_queries/', '_defaults/']
 
 
 def read_json_file(path):
@@ -22,85 +19,7 @@ def read_json_file(path):
                     return json.loads(json_file.read())
 
 
-class Indexer(object):
-    # TODO: This will become a new processor, "filesystem"
-
-    def __init__(self, indexable):
-        self.path = indexable.physical_path
-        self.name = indexable.index_name()
-
-    def index_documents_to(self, es):
-        count = 0
-        for document in self.documents():
-            if document.get('published', True):
-                es.create(index="content",
-                          doc_type=self.name,
-                          id=document['_id'],
-                          body=document)
-                count += 1
-                sys.stdout.write("indexed %s %s \r" % (count, self.name))
-                sys.stdout.flush()
-
-        sys.stdout.write("indexed %s %s \n" % (count, self.name))
-
-    def documents(self):
-        return []
-
-    def load_mapping_file(self, mapping_path):
-
-        try:
-            return read_json_file(mapping_path)
-
-        except IOError:
-            logging.debug("could not read %s" % mapping_path)
-
-        except ValueError:
-            logging.debug("could not parse JSON in %s" % mapping_path)
-
-    def additional_mappings(self):
-        if hasattr(self, 'additional_mappings_path'):
-                mapping_path = self.additional_mappings_path()
-                return self.load_mapping_file(mapping_path)
-
-    def __str__(self):
-        return "<{0}, {1}>".format(type(self).__name__, self.name)
-
-
-class DirectoryIndexer(Indexer):
-
-    def additional_mappings_path(self):
-        return os.path.join(self.path, 'mappings.json')
-
-    def documents(self):
-        for document_path in glob.glob(self.path + '/*.md'):
-            yield reader.document_from_path(document_path)
-
-
-class CSVFileIndexer(Indexer):
-
-    def additional_mappings_path(self):
-        return self.path + '.mappings.json'
-
-    def documents(self):
-        with file(self.path) as csvfile:
-            next_id = 1
-            for row in DictReader(csvfile):
-                row['_id'] = next_id
-                next_id += 1
-                yield row
-
-
-class PageIndexer(Indexer):
-    name = "pages"
-
-    def __init__(self):
-        pages = []
-
-    def add(self, path):
-        self.pages.append(path)
-
-
-class CustomIndexer(Indexer):
+class ContentProcessor(object):
     def __init__(self, name, **kwargs):
         self.name = name
         self.processor_name = kwargs['processor']
@@ -114,20 +33,16 @@ class CustomIndexer(Indexer):
     def documents(self):
         return self.processor_module.documents(self.name, **self.kwargs)
 
-    def additional_mappings_path(self):
-        if hasattr(self, 'mappings_path'):
-            return self.mappings_path
-        return None
-
-
-def path_to_type_name(path):
-    path = path.replace('/_', '_')
-    path = path.replace('/', '_')
-    path = path.replace('-', '_')
-    return path
+    def mapping(self, default_mapping):
+        # TODO: restore "additional mapping" functionality
+        if hasattr(self.processor_module, 'mappings'):
+            return self.processor_module.mappings(**self.kwargs)
+        else:
+            copy.deepcopy(default_mapping)
 
 
 def index_args(args):
+    os.chdir(args.location)
     index_location(args.location)
 
 
@@ -135,9 +50,11 @@ def index_location(path):
 
     settings_path = os.path.join(path, '_settings/settings.json')
     default_mapping_path = os.path.join(path, '_defaults/mappings.json')
-    custom_processors_path = os.path.join('_settings/custom_processors.json')
+    processors_path = os.path.join('_settings/processors.json')
 
     es = Elasticsearch()
+
+    # TODO: index name needs to be configurable
 
     if es.indices.exists('content'):
         es.indices.delete('content')
@@ -146,19 +63,25 @@ def index_location(path):
     else:
         es.indices.create(index="content")
 
-    page_indexer = PageIndexer()
-    indexers = [page_indexer]
+    processors = []
+    processor_settings = read_json_file(processors_path)
 
-    site = Site(path)
-    indexables = site.indexables()
-    indexers = [i.indexer() for i in indexables]
+    configured_processors = [ContentProcessor(name, **details)
+                             for name, details
+                             in processor_settings.iteritems()]
 
-    custom_processors = read_json_file(custom_processors_path)
-    if custom_processors:
-        for name, details in custom_processors.iteritems():
-            indexer = CustomIndexer(name, **details)
-            indexers.append(indexer)
+    processors += configured_processors
 
+    underscored = glob.glob('_*/')
+    filesystem_candidates = [u for u in underscored if u not in DO_NOT_INDEX]
+ 
+    for f in filesystem_candidates:
+        # TODO: don't create processors for directories that
+        # have a configured processor
+        processor_name = f[1:-1]
+        processor_args = dict(directory=f,
+                              processor="sheer.processors.filesystem")
+        processors.append(ContentProcessor(processor_name, **processor_args))
     # Load default mapping (or not)
     if os.path.exists(default_mapping_path):
         try:
@@ -169,16 +92,18 @@ def index_location(path):
     else:
         default_mapping = {}
 
-    for indexer in indexers:
-            mappings = copy.deepcopy(default_mapping)
-            if hasattr(indexer, 'additional_mappings'):
-                additional_mappings = indexer.additional_mappings()
-                if additional_mappings:
-                    for key in additional_mappings.keys():
-                        if key in mappings:
-                            mappings[key].update(additional_mappings[key])
-                        else:
-                            mappings[key] = additional_mappings[key]
-            es.indices.put_mapping(index='content', doc_type=indexer.name, body={indexer.name: mappings})
-            print "creating mapping for %s" % (indexer.name)
-            indexer.index_documents_to(es)
+    for processor in reversed(processors):
+        print "creating mapping for %s (%s)" % (processor.name, processor.processor_name)
+        es.indices.put_mapping(index='content',
+                               doc_type=processor.name,
+                               body={processor.name: processor.mapping(default_mapping)})
+
+        for i, document in enumerate(processor.documents()):
+            es.create(index="content",
+                      doc_type=processor.name,
+                      id=document['_id'],
+                      body=document)
+            sys.stdout.write("indexed %s %s \r" % (i+1, processor.name))
+            sys.stdout.flush()
+
+        sys.stdout.write("indexed %s %s \n" % (i+1, processor.name))
