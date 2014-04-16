@@ -36,9 +36,9 @@ class ContentProcessor(object):
     def mapping(self, default_mapping):
         # TODO: restore "additional mapping" functionality
         if hasattr(self.processor_module, 'mappings'):
-            return self.processor_module.mappings(**self.kwargs)
+            return self.processor_module.mappings(self.name, **self.kwargs)
         else:
-            copy.deepcopy(default_mapping)
+            return copy.deepcopy(default_mapping)
 
 
 def index_args(args):
@@ -50,7 +50,7 @@ def index_location(path):
 
     settings_path = os.path.join(path, '_settings/settings.json')
     default_mapping_path = os.path.join(path, '_defaults/mappings.json')
-    processors_path = os.path.join('_settings/processors.json')
+    processors_path = os.path.join(path, '_settings/processors.json')
 
     es = Elasticsearch()
 
@@ -80,6 +80,7 @@ def index_location(path):
         # have a configured processor
         processor_name = f[1:-1]
         processor_args = dict(directory=f,
+                              site_root = path,
                               processor="sheer.processors.filesystem")
         processors.append(ContentProcessor(processor_name, **processor_args))
     # Load default mapping (or not)

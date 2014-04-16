@@ -1,6 +1,9 @@
 import sys
 import json
 import requests
+from string import Template
+
+import dateutil.parser
 
 def posts_at_url(url):
     
@@ -24,12 +27,14 @@ def documents(name, url):
         yield process_post(post)
 
 def process_post(post):
+    del post['comments']
     post['_id'] = post['slug']
     # remove fields we're not interested in
-    for cat in post['categories']:
-        del cat['id']
-        del cat['parent']
-        del cat['post_count']
-    del post['author']['id']
-    del post['id']
+    post['categories'] = [cat['slug'] for cat in post['categories']]
+    post['tags'] = [tag['slug'] for tag in post['tags']]
+    author_template = Template("$first_name $last_name")
+    post['author'] = author_template.substitute(**post['author'])
+    dt = dateutil.parser.parse(post['date'])
+    dt_string = dt.strftime('%Y-%m-%d %H:%M:%S')
+    post['date'] = dt_string
     return post

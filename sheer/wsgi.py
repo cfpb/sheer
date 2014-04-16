@@ -80,7 +80,7 @@ def app_with_config(root_dir):
         search_path = build_search_path(app.root_dir,
                                         flask.request.path,
                                         append='_queries')
-        context = {'queries' : QueryFinder(search_path, flask.request)}
+        context = {'queries' : QueryFinder(search_path)}
         return context
         
     @app.template_filter(name='date')
