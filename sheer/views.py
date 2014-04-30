@@ -22,6 +22,7 @@ def serve_requested_file(directory, requested_file, lookup_results=None):
         if os.path.exists(template_path):
             with codecs.open(template_path, encoding="utf-8") as template_source:
                 return flask.render_template_string(template_source.read(),**extra_context)
+    flask.abort(404)
 
             
 

@@ -47,5 +47,5 @@ def add_lookups_to_sheer(app):
                 def lookup_context_processor():
                     return {name: LazyLookup(**kwarguments)}
 
-        app.lookup_map = werkzeug.routing.Map(url_rules)
-        app.url_lookups_by_name = url_lookups_by_name
+    app.lookup_map = werkzeug.routing.Map(url_rules)
+    app.url_lookups_by_name = url_lookups_by_name
