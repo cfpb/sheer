@@ -66,11 +66,12 @@ def index_location(path):
     processors = []
     processor_settings = read_json_file(processors_path)
 
-    configured_processors = [ContentProcessor(name, **details)
-                             for name, details
-                             in processor_settings.iteritems()]
+    if processor_settings:
+        configured_processors = [ContentProcessor(name, **details)
+                                 for name, details
+                                 in processor_settings.iteritems()]
 
-    processors += configured_processors
+        processors += configured_processors
 
     underscored = glob.glob('_*/')
     filesystem_candidates = [u for u in underscored if u not in DO_NOT_INDEX]
