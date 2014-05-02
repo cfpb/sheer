@@ -71,7 +71,12 @@ class QueryHit(object):
 
     @property
     def permalink(self):
-        return ""
+        app = flask.current_app
+        rule = app.permalinks_by_type.get(self.type)
+        if rule:
+            build_with=dict(id = self.hit_dict['_id'])
+            _ , url = rule.build(build_with)
+            return url
 
     def __getattr__(self, attrname):
         value = field_or_source_value(attrname, self.hit_dict)
