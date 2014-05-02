@@ -18,6 +18,7 @@ def serve_requested_file(directory, requested_file, lookup_results=None):
         template_path = os.path.join(directory, template_name)
         extra_context = {}
         lookup_name, url_args = lookup_results
+        url_args['name'] = lookup_name
         extra_context = flask.current_app.url_lookups_by_name[lookup_name](url_args)
         if os.path.exists(template_path):
             with codecs.open(template_path, encoding="utf-8") as template_source:

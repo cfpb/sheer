@@ -10,18 +10,17 @@ class LazyLookup(object):
         self.kwargs = kwargs
         if 'module_name' in kwargs:
             self.module_name = kwargs['module_name']
-            self._cached = None
             del self.kwargs['module_name']
 
     def lookup(self):
-        if not self._cached:
-            self.lookup_module = self.processor_module = importlib.import_module(self.module_name)
-            self._cached = self.lookup_module.do_lookup(**self.kwargs)
-        return self._cached
+        self.lookup_module = self.processor_module = importlib.import_module(self.module_name)
+        return self.lookup_module.do_lookup(**self.kwargs)
 
     def __getattr__(self, attrname):
-        proxy_for = self.lookup()
-        return getattr(self.proxy_for, attrname)
+
+        self.proxy_for = self.lookup()
+        attr =  getattr(self.proxy_for, attrname)
+        return attr
 
 
 def add_lookups_to_sheer(app):
@@ -43,9 +42,10 @@ def add_lookups_to_sheer(app):
                     lookup_staged = functools.partial(lookup_module.do_url, kwarguments)
                     url_lookups_by_name[name]=lookup_staged
 
-                @app.context_processor
-                def lookup_context_processor():
-                    return {name: LazyLookup(**kwarguments)}
+                else:
+                    @app.context_processor
+                    def lookup_context_processor():
+                        return {name: LazyLookup(**kwarguments)}
 
     app.lookup_map = werkzeug.routing.Map(url_rules)
     app.url_lookups_by_name = url_lookups_by_name

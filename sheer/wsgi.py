@@ -2,6 +2,7 @@ import os
 import os.path
 import re
 import functools
+import markdown
 
 from jinja2.loaders import FileSystemLoader
 from .lookups import add_lookups_to_sheer
@@ -87,6 +88,10 @@ def app_with_config(root_dir):
     def date_filter(value, format="%Y-%m-%d"):
         return date_formatter(value,format)
         
+    @app.template_filter(name='markdown')
+    def markdown_filter(raw_text):
+        return markdown.markdown(raw_text)
+
     add_lookups_to_sheer(app)
     add_apis_to_sheer(app)
     return app
