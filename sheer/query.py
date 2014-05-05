@@ -11,6 +11,8 @@ import dateutil.parser
 from time import mktime, strptime
 import datetime
 
+from werkzeug.urls import url_encode
+
 from sheer.decorators import memoized
 from sheer.utility import find_in_search_path
 
@@ -90,12 +92,13 @@ class QueryHit(object):
 
 class QueryResults(object):
 
-    def __init__(self, result_dict):
+    def __init__(self, result_dict, pagenum = 1):
         self.result_dict = result_dict
         self.total = int(result_dict['hits']['total'])
         self.size = int(result_dict['query'].get('size', '10'))
         self.from_ = int(result_dict['query'].get('from', 1))
         self.pages = self.total / self.size + int(self.total%self.size > 0)
+        self.current_page = pagenum
 
     def __iter__(self):
         if 'hits' in self.result_dict and 'hits' in self.result_dict['hits']:
@@ -110,12 +113,26 @@ class QueryResults(object):
 
         if self.from_:
             response_data['from'] = self.from_
-        
+
         if self.pages:
             response_data['pages'] = self.pages
         response_data['results'] = [hit.json_compatible() for hit in self.__iter__()]
         return response_data
 
+    def url_for_page(self, pagenum):
+        current_args = flask.request.args
+        args_dict = current_args.to_dict()
+        if pagenum != 1:
+            args_dict['page'] = pagenum
+        elif 'page' in args_dict:
+            del args_dict['page']
+            
+        encoded = url_encode(args_dict)
+        if encoded:
+            url = "".join([flask.request.path, "?",url_encode(args_dict)])
+            return url
+        else:
+            return flask.request.path
 
 class Query(object):
     #TODO: This no longer respects the elasticsearch URL passed in on the CLI
@@ -148,6 +165,7 @@ class Query(object):
         query_dict = json.loads(file(self.filename).read())
         query_dict['index'] = self.es_index
         query_dict.update(kwargs)
+        pagenum =1
 
         if 'sort' not in query_dict:
             query_dict['sort'] = "date:desc"
@@ -158,12 +176,13 @@ class Query(object):
 
         if 'page' in args_flat:
             args_flat['from_'] = int(query_dict.get('size', '10')) * (int(args_flat['page'])-1)
+            pagenum = int(args_flat['page'])
 
         query_dict.update(args_flat)
         final_query_dict = {k:v for k,v in query_dict.items() if k in ALLOWED_SEARCH_PARAMS}
         response = self.es.search(**final_query_dict)
         response['query']= query_dict
-        return QueryResults(response)
+        return QueryResults(response,pagenum )
 
     @property
     def results(self):
