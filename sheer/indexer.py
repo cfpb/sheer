@@ -68,8 +68,10 @@ def index_location(args, config):
 
         processors += configured_processors
 
-    underscored = glob.glob('_*/')
-    filesystem_candidates = [u for u in underscored if u not in DO_NOT_INDEX]
+    glob_pattern = "".join([os.path.normpath(path),"/_*/"])
+    underscored = glob.glob(glob_pattern)
+    ignore_dirs = [os.path.join(path,d) for d in DO_NOT_INDEX]
+    filesystem_candidates = [u for u in underscored if u not in ignore_dirs]
  
     for f in filesystem_candidates:
         # TODO: don't create processors for directories that

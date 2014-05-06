@@ -6,10 +6,10 @@ from flask import request
 from werkzeug.exceptions import HTTPException, NotFound
 
 def serve_requested_file(directory, requested_file, lookup_results=None):
-    if os.path.exists(requested_file):
+    complete_path = os.path.join(directory, requested_file)
+    if os.path.exists(complete_path):
         if requested_file.lower().endswith('.html'):
-            path = os.path.join(directory, requested_file)
-            with codecs.open(path, encoding="utf-8") as template_source:
+            with codecs.open(complete_path, encoding="utf-8") as template_source:
                 return flask.render_template_string(template_source.read())
         else:
             return flask.send_from_directory(directory, requested_file)
