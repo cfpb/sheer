@@ -5,7 +5,6 @@ import json
 
 import flask
 
-from elasticsearch import Elasticsearch
 import dateutil.parser
 
 from time import mktime, strptime
@@ -28,9 +27,10 @@ ALLOWED_SEARCH_PARAMS = ('doc_type',
 
 @memoized
 def mapping_for_type(typename):
-    #TODO respect configured index
-    es = Elasticsearch()
-    return es.indices.get_mapping(index="content", doc_type= typename) 
+    es = flask.current_app.es
+    es_index =flask.current_app.es_index
+
+    return es.indices.get_mapping(index=es_index, doc_type= typename) 
 
 def field_or_source_value(fieldname, hit_dict):
     if 'fields' in hit_dict and fieldname in hit_dict['fields']:
@@ -41,8 +41,11 @@ def field_or_source_value(fieldname, hit_dict):
 
 
 def datatype_for_fieldname_in_mapping(fieldname, hit_type, mapping_dict):
+    es = flask.current_app.es
+    es_index =flask.current_app.es_index
+
     try:
-        return mapping_dict["content"]["mappings"][hit_type]["properties"][fieldname]["type"]
+        return mapping_dict[es_index]["mappings"][hit_type]["properties"][fieldname]["type"]
     except KeyError:
         return 'string'
 
@@ -134,14 +137,16 @@ class QueryResults(object):
         else:
             return flask.request.path
 
+
 class Query(object):
     #TODO: This no longer respects the elasticsearch URL passed in on the CLI
 
-    def __init__(self, filename=None, es_index='content', json_safe=False):
+    def __init__(self, filename=None, json_safe=False):
         # TODO: make the no filename case work
 
-        self.es_index = es_index
-        self.es = Elasticsearch()
+        app = flask.current_app
+        self.es_index = app.es_index
+        self.es = app.es
         self.filename = filename
         self.__results = None
         self.json_safe = json_safe
@@ -149,6 +154,7 @@ class Query(object):
     def search(self, **kwargs):
         query_dict = json.loads(file(self.filename).read())
         query_dict['index'] = self.es_index
+
         if 'facet' in kwargs:
             kwargs
         query_dict.update(kwargs)
@@ -163,7 +169,6 @@ class Query(object):
     def search_with_url_arguments(self, **kwargs):
         # TODO: DRY with above
         query_dict = json.loads(file(self.filename).read())
-        query_dict['index'] = self.es_index
         query_dict.update(kwargs)
         pagenum =1
 
@@ -180,6 +185,7 @@ class Query(object):
 
         query_dict.update(args_flat)
         final_query_dict = {k:v for k,v in query_dict.items() if k in ALLOWED_SEARCH_PARAMS}
+        final_query_dict['index'] = self.es_index
         response = self.es.search(**final_query_dict)
         response['query']= query_dict
         return QueryResults(response,pagenum )
@@ -206,12 +212,14 @@ class Query(object):
 class QueryFinder(object):
 
     def __init__(self, searchpath = None):
+        app = flask.current_app
+        self.es = app.es
+        self.es_index = app.es_index
+
         if searchpath:
             self.searchpath = searchpath
         else:
             self.searchpath = [os.path.join(flask.current_app.root_dir, '_queries')]
-        self.es_index = flask.request.environ.get('ELASTICSEARCH_INDEX', 'content')
-        # TODO must respect global config!
 
     def __getattr__(self, name):
         query_filename = name + ".json"

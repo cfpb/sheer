@@ -34,34 +34,29 @@ class ContentProcessor(object):
         return self.processor_module.documents(self.name, **self.kwargs)
 
     def mapping(self, default_mapping):
-        # TODO: restore "additional mapping" functionality
         if hasattr(self.processor_module, 'mappings'):
             return self.processor_module.mappings(self.name, **self.kwargs)
         else:
             return copy.deepcopy(default_mapping)
 
 
-def index_args(args):
-    os.chdir(args.location)
-    index_location(args.location)
 
+def index_location(args, config):
 
-def index_location(path):
-
+    path = config['location']
     settings_path = os.path.join(path, '_settings/settings.json')
     default_mapping_path = os.path.join(path, '_defaults/mappings.json')
     processors_path = os.path.join(path, '_settings/processors.json')
 
-    es = Elasticsearch()
+    es = Elasticsearch(config["elasticsearch"])
+    index_name = config["index"]
 
-    # TODO: index name needs to be configurable
-
-    if es.indices.exists('content'):
-        es.indices.delete('content')
+    if es.indices.exists(index_name):
+        es.indices.delete(index_name)
     if os.path.exists(settings_path):
-        es.indices.create(index="content", body=file(settings_path).read())
+        es.indices.create(index=index_name, body=file(settings_path).read())
     else:
-        es.indices.create(index="content")
+        es.indices.create(index=index_name)
 
     processors = []
     processor_settings = read_json_file(processors_path)
@@ -96,12 +91,12 @@ def index_location(path):
 
     for processor in reversed(processors):
         print "creating mapping for %s (%s)" % (processor.name, processor.processor_name)
-        es.indices.put_mapping(index='content',
+        es.indices.put_mapping(index=index_name,
                                doc_type=processor.name,
                                body={processor.name: processor.mapping(default_mapping)})
 
         for i, document in enumerate(processor.documents()):
-            es.create(index="content",
+            es.create(index=index_name,
                       doc_type=processor.name,
                       id=document['_id'],
                       body=document)

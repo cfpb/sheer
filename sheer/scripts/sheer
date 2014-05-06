@@ -7,37 +7,44 @@ import logging
 import sheer.indexer
 import sheer.server
 
+from sheer.utility import parse_es_hosts
+
+LOCATION = os.environ.get('SHEER_LOCATION', os.getcwd())
+ELASTICSEARCH_HOSTS = os.environ.get('SHEER_ELASTICSEARCH_HOSTS',
+                                     'localhost:9200')
+ELASTICSEARCH_INDEX = os.environ.get('SHEER_ELASTICSEARCH_INDEX', 'content')
+DEBUG = bool(os.environ.get('SHEER_DEBUG', False))
+
 if __name__ == '__main__':
 
-    parser = argparse.ArgumentParser(prog='sheer', description="document loader for dev server for Sheer, a publishing system")
+    parser = argparse.ArgumentParser(prog='sheer',
+                                     description="document loader and dev server for Sheer, a content publishing system")
 
     subparsers = parser.add_subparsers()
 
-    index_parser = subparsers.add_parser('index', help='load content into Elasticsearch')
+    index_parser = subparsers.add_parser('index',
+                                         help='load content into Elasticsearch')
 
-    index_parser.add_argument('location')
-                
-    index_parser.set_defaults(func=sheer.indexer.index_args)
-
+    index_parser.set_defaults(func=sheer.indexer.index_location)
     server_parser=subparsers.add_parser('serve', help= "serve content from elasticsearch, using configuration and templates at location")
-    server_parser.add_argument('location')
-    
     server_parser.set_defaults(func=sheer.server.serve_wsgi_app_with_cli_args)
-
     server_parser.add_argument('--port', '-p', 
             default= '7000')
 
     for p in [parser, index_parser, server_parser]:
-        p.add_argument('--debug', help="print debugging output to the console", action='store_true')
+        p.add_argument('--debug', help="print debugging output to the console", action='store_true', default=DEBUG)
+        p.add_argument('--location', '-l', default=LOCATION, help="Directory you want to operate on. You can also set the SHEER_LOCATION environment variable.")
+        p.add_argument('--elasticsearch', '-e', default=ELASTICSEARCH_HOSTS, help="elasticsearch host:port pairs. Seperate hosts with commas. Default is localhost:9200. You can also set the SHEER_ELASTICSEARCH_HOSTS environment variable.")
+        p.add_argument('--index', '-i', default=ELASTICSEARCH_INDEX, help="elasticsearch index name. Default is 'content'. You can also set the SHEER_ELASTICSEARCH_INDEX environment variable.")
 
     args = parser.parse_args()
-
 
     if args.debug:
         logger = logging.getLogger("")
         logger.setLevel(logging.DEBUG)
-        tracer = logging.getLogger('elasticsearch.trace')
-        tracer.setLevel(logging.DEBUG)
-        tracer.addHandler(logging.FileHandler('/tmp/elasticsearch-py.sh'))
 
-    args.func(args)
+    config = dict(debug=args.debug,
+                  location=os.path.join(os.getcwd(), args.location),
+                  elasticsearch=parse_es_hosts(args.elasticsearch),
+                  index=args.index)
+    args.func(args, config)

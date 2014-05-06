@@ -1,4 +1,4 @@
-from .utility import build_search_path_for_request, build_search_path
+from .utility import build_search_path, parse_es_host_port_pair, parse_es_hosts
 
 
 class testSearchpaths:
@@ -31,3 +31,19 @@ class testSearchpaths:
         assert('/var/sheer/_layouts' in paths)
         assert('/var/_layouts' not in paths)
         assert paths[0] == '/var/sheer/my/site/is/cool/'
+
+    def test_parse_host_port_pair(self):
+        pairs= ["localhost", "localhost:9200", ":9200"]
+        for p in pairs:
+            result = parse_es_host_port_pair(p)
+            assert(result.get('host') == 'localhost')
+            assert(result.get('port') == 9200)
+
+    def test_parse_es_hosts(self):
+        packed_hosts= "ringo,foo:777,:9000"
+        parsed = parse_es_hosts(packed_hosts)
+        expected_hosts = ["ringo","foo","localhost"]
+        expected_ports = [9200, 777, 9000]
+        for result, host, port in zip(parsed, expected_hosts, expected_ports):
+            assert(result['host'] == host)
+            assert(result['port'] == port)

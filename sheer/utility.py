@@ -60,3 +60,24 @@ def find_in_search_path(filename, paths):
         combined_path = os.path.join(path, filename)
         if os.path.exists(combined_path):
             return combined_path
+
+
+def parse_es_host_port_pair(pair):
+    split_pair = pair.split(':')
+
+    host = split_pair[0] or 'localhost'
+
+    if len(split_pair) > 1:
+        port = int(split_pair[1])
+    else:
+        port = 9200
+
+    return dict(host=host, port=port)
+
+def parse_es_hosts(packed_hosts):
+    pairs = []
+    for pair in packed_hosts.split(','):
+        parsed = parse_es_host_port_pair(pair)
+        pairs.append(parsed)
+
+    return pairs

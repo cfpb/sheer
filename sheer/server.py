@@ -7,12 +7,11 @@ from .wsgi import app_with_config
 
 
 
-def serve_wsgi_app_with_cli_args(args):
-        root_dir = os.path.realpath(args.location)
+def serve_wsgi_app_with_cli_args(args, config):
 
-        application = app_with_config(root_dir = root_dir)
+        application = app_with_config(config)
 
-        if args.debug:
+        if config.get('debug'):
             application.debug = True
 
         application.run(port=int(args.port))
