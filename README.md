@@ -3,8 +3,8 @@ Sheer
 
 Sheer will contain:
 
-- Tools for loading arbitrary content (via the [processors](https://github.com/rosskarchner/sheer/wiki/Extending-Sheer#processors) into elasticsearch.
-- a web server that combines on-disk configuration and templates with data in elasticsearch, and [other API's](https://github.com/rosskarchner/sheer/wiki/Extending-Sheer#lookup).
+- Tools for loading arbitrary content into elasticsearch
+- A WSGI server for mixing that content with Jinja2 templates
 - scripts for pre-generating HTML from said configuration and elasticsearch data.
 
 Why Sheer? Why not Jekyll?
@@ -30,8 +30,39 @@ Status
 
 Parts of it work!
 
-sheer index *directory* will pull a sites content into Elasticsearch
+sheer index -l *directory* will pull a sites content into Elasticsearch
 
-sheer serve *directory* launches the web server
+sheer serve -l *directory* launches the web server
 
-sheer inspect *directory* displays a directory tree, as seen by sheer
+Usage
+--------------
+
+```
+sheer --help
+usage: sheer [-h] [--debug] [--location LOCATION]
+             [--elasticsearch ELASTICSEARCH] [--index INDEX]
+             {index,serve} ...
+
+document loader and dev server for Sheer, a content publishing system
+
+positional arguments:
+  {index,serve}
+    index               load content into Elasticsearch
+    serve               serve content from elasticsearch, using configuration
+                        and templates at location
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --debug               print debugging output to the console
+  --location LOCATION, -l LOCATION
+                        Directory you want to operate on. You can also set the
+                        SHEER_LOCATION environment variable.
+  --elasticsearch ELASTICSEARCH, -e ELASTICSEARCH
+                        elasticsearch host:port pairs. Seperate hosts with
+                        commas. Default is localhost:9200. You can also set
+                        the SHEER_ELASTICSEARCH_HOSTS environment variable.
+  --index INDEX, -i INDEX
+                        elasticsearch index name. Default is 'content'. You
+                        can also set the SHEER_ELASTICSEARCH_INDEX environment
+                        variable.
+```
