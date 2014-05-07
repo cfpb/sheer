@@ -76,7 +76,8 @@ def index_location(args, config):
     for f in filesystem_candidates:
         # TODO: don't create processors for directories that
         # have a configured processor
-        processor_name = f[1:-1]
+        processor_name_starts = f[0:-1].rfind('/')+2
+        processor_name = f[processor_name_starts:-1]
         processor_args = dict(directory=f,
                               site_root = path,
                               processor="sheer.processors.filesystem")
