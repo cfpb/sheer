@@ -17,7 +17,7 @@ from .views import handle_request
 from .utility import build_search_path
 from .query import QueryFinder
 
-IGNORE_PATH_RE = ['static', r'^[._].+', r'(_includes|_layouts)($|/)']
+IGNORE_PATH_RE = [r'^[._].+', r'(_includes|_layouts)($|/)']
 IGNORE_PATH_RE_COMPILED = [re.compile(pattern, flags=re.M) for pattern in IGNORE_PATH_RE]
 
 
