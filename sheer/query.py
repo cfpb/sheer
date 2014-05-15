@@ -11,9 +11,11 @@ from time import mktime, strptime
 import datetime
 
 from werkzeug.urls import url_encode
+from werkzeug.datastructures import MultiDict
 
 from sheer.decorators import memoized
 from sheer.utility import find_in_search_path
+from sheer.filters import filter_dsl_from_multidict
 
 
 ALLOWED_SEARCH_PARAMS = ('doc_type',
@@ -124,7 +126,7 @@ class QueryResults(object):
 
     def url_for_page(self, pagenum):
         current_args = flask.request.args
-        args_dict = current_args.to_dict()
+        args_dict = MultiDict(current_args)
         if pagenum != 1:
             args_dict['page'] = pagenum
         elif 'page' in args_dict:
@@ -176,8 +178,8 @@ class Query(object):
             query_dict['sort'] = "date:desc"
         
         request = flask.request
+        filters = filter_dsl_from_multidict(request.args)
         args_flat = request.args.to_dict(flat=True)
-
 
         if 'page' in args_flat:
             args_flat['from_'] = int(query_dict.get('size', '10')) * (int(args_flat['page'])-1)
@@ -186,6 +188,10 @@ class Query(object):
         query_dict.update(args_flat)
         final_query_dict = {k:v for k,v in query_dict.items() if k in ALLOWED_SEARCH_PARAMS}
         final_query_dict['index'] = self.es_index
+
+        query_body = {"query": {'filtered':{}}}
+        query_body['query']['filtered']['filter'] = filters
+        final_query_dict['body'] = query_body
         response = self.es.search(**final_query_dict)
         response['query']= query_dict
         return QueryResults(response,pagenum )

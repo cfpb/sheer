@@ -40,8 +40,12 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.debug:
+        logging.basicConfig()
         logger = logging.getLogger("")
         logger.setLevel(logging.DEBUG)
+        tracer = logging.getLogger('elasticsearch.trace')
+        tracer.setLevel(logging.DEBUG)
+        tracer.addHandler(logging.FileHandler('/tmp/elasticsearch-py.sh'))
 
     config = dict(debug=args.debug,
                   location=os.path.join(os.getcwd(), args.location),
