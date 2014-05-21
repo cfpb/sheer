@@ -59,12 +59,7 @@ def coerced_value(value, datatype):
     coercer = TYPE_MAP[datatype]
 
     if type(value) == list:
-        if len(value) > 0:
-            coerced = coercer(value[0])
-            return coerced
-        else:
-            return ""
-
+        return [coercer(v) for v in value] or ""
     else:
         return coercer(value)
 
