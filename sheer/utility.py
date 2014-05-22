@@ -1,4 +1,6 @@
 import os.path
+import sys
+
 import flask
 
 this_dir = os.path.dirname(__file__)
@@ -26,6 +28,11 @@ def path_ancestors(path):
 
     return ancestors
         
+
+def add_site_libs(path):
+    libs_dir = os.path.join(path, '_lib')
+    sys.path.append(libs_dir)
+
 
 def build_search_path(root_dir, seeking_path, append=None, include_start_directory=False):
     rel_search_path = []

@@ -14,7 +14,7 @@ import elasticsearch
 from .templates import date_formatter
 
 from .views import handle_request
-from .utility import build_search_path
+from .utility import build_search_path, add_site_libs
 from .query import QueryFinder
 
 IGNORE_PATH_RE = [r'^[._].+', r'(_includes|_layouts)($|/)']
@@ -59,6 +59,7 @@ def app_with_config(config):
     elasticsearch_servers = config['elasticsearch']
     es_index = config['index']
 
+    add_site_libs(root_dir)
     app = Sheer(__name__, static_folder=os.path.join(root_dir, 'static'),
                 sheer_root=root_dir,
                 elasticsearch_servers=elasticsearch_servers,

@@ -10,7 +10,9 @@ from csv import DictReader
 
 from elasticsearch import Elasticsearch
 
-DO_NOT_INDEX = ['_settings/', '_layouts/', '_queries/', '_defaults/']
+from sheer.utility import add_site_libs
+
+DO_NOT_INDEX = ['_settings/', '_layouts/', '_queries/', '_defaults/', '_lib/']
 
 
 def read_json_file(path):
@@ -40,10 +42,11 @@ class ContentProcessor(object):
             return copy.deepcopy(default_mapping)
 
 
-
 def index_location(args, config):
 
     path = config['location']
+    add_site_libs(path)
+
     settings_path = os.path.join(path, '_settings/settings.json')
     default_mapping_path = os.path.join(path, '_defaults/mappings.json')
     processors_path = os.path.join(path, '_settings/processors.json')
