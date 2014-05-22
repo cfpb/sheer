@@ -201,6 +201,7 @@ class Query(object):
 
 
 
+    #TODO does this function still need to exist?
     def iterate_results(self):
         if 'hits' in self.results:
             for hit in self.results['hits']['hits']:
