@@ -148,7 +148,7 @@ class Query(object):
         self.__results = None
         self.json_safe = json_safe
 
-    def search(self, **kwargs):
+    def search(self, facets=None, **kwargs):
         query_dict = json.loads(file(self.filename).read())
         query_dict['index'] = self.es_index
 
@@ -165,6 +165,8 @@ class Query(object):
 
     def search_with_url_arguments(self, **kwargs):
         # TODO: DRY with above
+        # TODO: Seriously.
+
         query_dict = json.loads(file(self.filename).read())
         query_dict.update(kwargs)
         pagenum =1
@@ -190,6 +192,9 @@ class Query(object):
         response = self.es.search(**final_query_dict)
         response['query']= query_dict
         return QueryResults(response,pagenum )
+
+    def values_for_field(self, field):
+
 
     @property
     def results(self):
