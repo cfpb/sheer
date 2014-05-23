@@ -14,4 +14,4 @@ def serve_wsgi_app_with_cli_args(args, config):
         if config.get('debug'):
             application.debug = True
 
-        application.run(port=int(args.port))
+        application.run(host=args.addr, port=int(args.port))
