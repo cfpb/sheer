@@ -105,6 +105,11 @@ class QueryResults(object):
             for hit in self.result_dict['hits']['hits']:
                 yield QueryHit(hit)
 
+    def facets(self, fieldname):
+        if "facets" in self.result_dict and fieldname in self.result_dict["facets"]:
+            return self.result_dict['facets'][fieldname]["terms"]
+
+
     def json_compatible(self):
         response_data = {}
         response_data['total'] = self.result_dict['hits']['total']
@@ -136,7 +141,6 @@ class QueryResults(object):
 
 
 class Query(object):
-    #TODO: This no longer respects the elasticsearch URL passed in on the CLI
 
     def __init__(self, filename=None, json_safe=False):
         # TODO: make the no filename case work
@@ -148,16 +152,26 @@ class Query(object):
         self.__results = None
         self.json_safe = json_safe
 
-    def search(self, facets=None, **kwargs):
+    def search(self, term_facets=None, **kwargs):
         query_dict = json.loads(file(self.filename).read())
         query_dict['index'] = self.es_index
 
-        if 'facet' in kwargs:
-            kwargs
+        query_body = {}
+
+        if term_facets != None:
+            facets_dsl = {}
+            if type(term_facets) is str:
+                term_facets = [term_facets] # so we can treat it as a list
+            for fieldname in term_facets:
+                facets_dsl[fieldname]={"terms":{"field":fieldname}}
+        query_body["facets"] = facets_dsl
         query_dict.update(kwargs)
+        query_dict['body'] = query_body
+
 
         if 'sort' not in query_dict:
             query_dict['sort'] = "date:desc"
+
         response = self.es.search(**query_dict)
 
         response['query']= query_dict
@@ -193,8 +207,10 @@ class Query(object):
         response['query']= query_dict
         return QueryResults(response,pagenum )
 
-    def values_for_field(self, field):
-
+    def possible_values_for(self, field):
+        results = self.search(term_facets=[field])
+        return results.facets(field)
+        
 
     @property
     def results(self):

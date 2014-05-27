@@ -7,8 +7,9 @@ def filter_dsl_from_multidict(multidict):
             field = key[7:]
             values = multidict.getlist(key)
             for val in values:
-                term_clause = {"term":{}}
-                term_clause["term"][field] = val
-                dsl["bool"]["should"].append(term_clause)
+                if val:
+                    term_clause = {"term":{}}
+                    term_clause["term"][field] = val
+                    dsl["bool"]["should"].append(term_clause)
 
         return dsl
