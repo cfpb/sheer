@@ -27,15 +27,15 @@ class ContentProcessor(object):
         self.processor_name = kwargs['processor']
         del kwargs['processor']
         self.processor_module = importlib.import_module(self.processor_name)
-        if 'extra_mappings_file' in kwargs:
-            self.mappings_path = kwargs['extra_mappings_file']
-            del kwargs['extra_mappings_file']
         self.kwargs = kwargs
 
     def documents(self):
         return self.processor_module.documents(self.name, **self.kwargs)
 
     def mapping(self, default_mapping):
+        import pdb;pdb.set_trace()
+        if 'mappings' in self.kwargs:
+            return read_json_file(self.kwargs['mappings'])
         if hasattr(self.processor_module, 'mappings'):
             return self.processor_module.mappings(self.name, **self.kwargs)
         else:
