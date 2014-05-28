@@ -33,7 +33,6 @@ class ContentProcessor(object):
         return self.processor_module.documents(self.name, **self.kwargs)
 
     def mapping(self, default_mapping):
-        import pdb;pdb.set_trace()
         if 'mappings' in self.kwargs:
             return read_json_file(self.kwargs['mappings'])
         if hasattr(self.processor_module, 'mappings'):
