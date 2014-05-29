@@ -1,3 +1,4 @@
+import flask
 
 def filter_dsl_from_multidict(multidict):
     filter_keys = [k for k in multidict.keys() if k.startswith('filter_')]
@@ -13,3 +14,22 @@ def filter_dsl_from_multidict(multidict):
                     dsl["bool"]["should"].append(term_clause)
 
         return dsl
+    
+def selected_filters_from_multidict(multidict, field):
+    return multidict.getlist('filter_'+ field)
+
+def selected_filters_for_field(fieldname):
+    multidict = flask.request.args
+    return selected_filters_from_multidict(multidict, fieldname)
+
+def is_filter_selected(fieldname, value):
+    multidict = flask.request.args
+    return value in selected_filters_from_multidict(multidict, fieldname)
+
+def add_filter_utilities(app):
+
+    @app.context_processor
+    def filter_utility_context():
+        return {'selected_filters_for_field': selected_filters_for_field,
+                'is_filter_selected': is_filter_selected}
+    

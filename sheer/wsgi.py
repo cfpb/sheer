@@ -4,18 +4,17 @@ import re
 import functools
 import markdown
 
-from jinja2.loaders import FileSystemLoader
-from .lookups import add_lookups_to_sheer
-from .apis import add_apis_to_sheer
-
 import flask
 import elasticsearch
 
+from jinja2.loaders import FileSystemLoader
+from .lookups import add_lookups_to_sheer
+from .apis import add_apis_to_sheer
 from .templates import date_formatter
-
 from .views import handle_request
 from .utility import build_search_path, add_site_libs
 from .query import QueryFinder
+from .filters import add_filter_utilities
 
 IGNORE_PATH_RE = [r'^[._].+', r'(_includes|_layouts)($|/)']
 IGNORE_PATH_RE_COMPILED = [re.compile(pattern, flags=re.M) for pattern in IGNORE_PATH_RE]
@@ -107,4 +106,6 @@ def app_with_config(config):
 
     add_lookups_to_sheer(app)
     add_apis_to_sheer(app)
+    add_filter_utilities(app)
+
     return app
