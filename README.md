@@ -34,6 +34,8 @@ sheer index -l *directory* will pull a sites content into Elasticsearch
 
 sheer serve -l *directory* launches the web server
 
+With both commands, you can ommit the -l option to act on the current directory.
+
 Usage
 --------------
 
