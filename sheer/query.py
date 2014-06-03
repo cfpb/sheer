@@ -49,11 +49,15 @@ def datatype_for_fieldname_in_mapping(fieldname, hit_type, mapping_dict):
     try:
         return mapping_dict[es_index]["mappings"][hit_type]["properties"][fieldname]["type"]
     except KeyError:
-        return 'string'
+        return None
 
 def coerced_value(value, datatype):
+    if datatype == None:
+        return value
+
     TYPE_MAP={'string': unicode,
               'date': dateutil.parser.parse,
+              'dict': dict,
               'long':float}
 
     coercer = TYPE_MAP[datatype]
