@@ -94,6 +94,9 @@ def index_location(args, config):
     else:
         default_mapping = {}
 
+    if not processors:
+        print "Couldn't find anything to index"
+
     for processor in reversed(processors):
         print "creating mapping for %s (%s)" % (processor.name, processor.processor_name)
         es.indices.put_mapping(index=index_name,
