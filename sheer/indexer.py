@@ -94,15 +94,13 @@ def index_location(args, config):
     else:
         default_mapping = {}
 
-    if not processors:
-        print "Couldn't find anything to index"
-
     for processor in reversed(processors):
         print "creating mapping for %s (%s)" % (processor.name, processor.processor_name)
         es.indices.put_mapping(index=index_name,
                                doc_type=processor.name,
                                body={processor.name: processor.mapping(default_mapping)})
 
+        i=-1
         for i, document in enumerate(processor.documents()):
             es.create(index=index_name,
                       doc_type=processor.name,

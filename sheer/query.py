@@ -167,7 +167,7 @@ class Query(object):
             if type(term_facets) is str:
                 term_facets = [term_facets] # so we can treat it as a list
             for fieldname in term_facets:
-                facets_dsl[fieldname]={"terms":{"field":fieldname}}
+                facets_dsl[fieldname]={"terms":{"field":fieldname, "size":10000}}
         query_body["facets"] = facets_dsl
         query_dict.update(kwargs)
         query_dict['body'] = query_body
