@@ -100,6 +100,7 @@ def index_location(args, config):
                                doc_type=processor.name,
                                body={processor.name: processor.mapping(default_mapping)})
 
+        i=-1
         for i, document in enumerate(processor.documents()):
             es.create(index=index_name,
                       doc_type=processor.name,
