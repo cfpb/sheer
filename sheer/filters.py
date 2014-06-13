@@ -1,19 +1,42 @@
 import flask
 
+ALLOWED_DATE_FIELDS = ['filter_date_gte','filter_date_gt', 'filter_date_lte', 'filter_date_lt']
+
 def filter_dsl_from_multidict(multidict):
-    filter_keys = [k for k in multidict.keys() if k.startswith('filter_')]
-    if len(filter_keys) > 0:
-        dsl = {"bool": {"must":[], "should":[], "must_not":[]}}
-        for key in filter_keys:
-            field = key[7:]
+    # Split the filters between 'range' and 'bool'
+    bool_filter_keys = [k for k in multidict.keys() if not k.startswith('filter_range_')]
+    range_filter_keys = [k for k in multidict.keys() if k.startswith('filter_range_')]
+
+    dsl = {}
+    if bool_filter_keys or range_filter_keys:
+        dsl["and"] = []
+    if bool_filter_keys:
+        bool_clause = {"bool":{"must":[], "should":[], "must_not":[]}}
+        for key in bool_filter_keys:
+            field = key.replace('filter_', '')
             values = multidict.getlist(key)
             for val in values:
-                if val:
-                    term_clause = {"term":{}}
-                    term_clause["term"][field] = val
-                    dsl["bool"]["should"].append(term_clause)
+                term_clause = {"term":{}}
+                term_clause["term"][field] = val
+                bool_clause["bool"]["should"].append(term_clause)
+        dsl["and"].append(bool_clause)
 
-        return dsl
+
+    if range_filter_keys:
+        range_clause = {"range":{}}
+        for key in range_filter_keys:
+            full_field = key.replace('filter_range_', '')
+            # We account for potential underscores in the field name itself e.g. comment_count
+            operator = full_field[full_field.rfind('_')+1:]
+            field = full_field[:full_field.rfind('_')]
+            if field not in range_clause["range"]:
+                range_clause["range"][field] = {}
+            # If there are multiples of the same date filter, this will take the first
+            value = multidict.getlist(key)[0]
+            range_clause["range"][field][operator] = value
+        dsl["and"].append(range_clause)
+
+    return dsl
     
 def selected_filters_from_multidict(multidict, field):
     return multidict.getlist('filter_'+ field)
