@@ -1,7 +1,5 @@
 import flask
 
-ALLOWED_DATE_FIELDS = ['filter_date_gte','filter_date_gt', 'filter_date_lte', 'filter_date_lt']
-
 def filter_dsl_from_multidict(multidict):
     # Split the filters between 'range' and 'bool'
     bool_filter_keys = [k for k in multidict.keys() if not k.startswith('filter_range_')]
