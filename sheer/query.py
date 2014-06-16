@@ -99,9 +99,10 @@ class QueryResults(object):
     def __init__(self, result_dict, pagenum = 1):
         self.result_dict = result_dict
         self.total = int(result_dict['hits']['total'])
-        self.size = int(result_dict['query'].get('size', '10'))
-        self.from_ = int(result_dict['query'].get('from', 1))
-        self.pages = self.total / self.size + int(self.total%self.size > 0)
+        if 'query' in result_dict:
+            self.size = int(result_dict['query'].get('size', '10'))
+            self.from_ = int(result_dict['query'].get('from', 1))
+            self.pages = self.total / self.size + int(self.total%self.size > 0)
         self.current_page = pagenum
 
     def __iter__(self):
@@ -265,3 +266,17 @@ class QueryJsonEncoder(json.JSONEncoder):
             return obj.json_compatible() 
 
         return json.JSONEncoder.default(self, obj)
+
+
+def add_query_utilities(app):
+    def more_like_this(hit, **kwargs):
+        es = flask.current_app.es
+        es_index = app.es_index
+        doctype, docid = hit.type, hit._id
+        raw_results = es.mlt(index=es_index, doc_type=doctype, id=docid, **kwargs)
+        return QueryResults(raw_results)
+
+    @app.context_processor
+    def query_utility_context_processor():
+        context = {'more_like_this': more_like_this}
+        return context

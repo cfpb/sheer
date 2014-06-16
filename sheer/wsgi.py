@@ -13,7 +13,7 @@ from .apis import add_apis_to_sheer
 from .templates import date_formatter
 from .views import handle_request
 from .utility import build_search_path, add_site_libs
-from .query import QueryFinder
+from .query import QueryFinder, add_query_utilities
 from .filters import add_filter_utilities
 
 IGNORE_PATH_RE = [r'^[._].+', r'(_includes|_layouts)($|/)']
@@ -104,6 +104,7 @@ def app_with_config(config):
     def markdown_filter(raw_text):
         return markdown.markdown(raw_text)
 
+    add_query_utilities(app)
     add_lookups_to_sheer(app)
     add_apis_to_sheer(app)
     add_filter_utilities(app)
