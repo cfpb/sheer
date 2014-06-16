@@ -103,6 +103,9 @@ class QueryResults(object):
             self.size = int(result_dict['query'].get('size', '10'))
             self.from_ = int(result_dict['query'].get('from', 1))
             self.pages = self.total / self.size + int(self.total%self.size > 0)
+        else:
+            self.size, self.from_, self.pages = 10,1,1    
+
         self.current_page = pagenum
 
     def __iter__(self):
@@ -276,7 +279,14 @@ def add_query_utilities(app):
         raw_results = es.mlt(index=es_index, doc_type=doctype, id=docid, **kwargs)
         return QueryResults(raw_results)
 
+    def get_document(doctype, docid):
+        es = flask.current_app.es
+        es_index = app.es_index
+        raw_results = es.get(index=es_index, doc_type=doctype, id=docid)
+        return QueryHit(raw_results)
+
     @app.context_processor
     def query_utility_context_processor():
-        context = {'more_like_this': more_like_this}
+        context = {'more_like_this': more_like_this,
+                   'get_document': get_document}
         return context
