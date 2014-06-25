@@ -2,9 +2,11 @@ import flask
 import re
 
 def filter_dsl_from_multidict(multidict):
-    # Split the filters between 'range' and 'bool'
-    bool_filter_keys = [k for k in multidict.keys() if re.compile("^filter_(?!range_)").match(k)]
-    range_filter_keys = [k for k in multidict.keys() if re.compile("^filter_range_").match(k)]
+    # Split the filters between 'range' and 'bool', making sure the query value isn't blank
+    bool_filter_keys = [r for r in [k for k in multidict.keys() if re.compile("^filter_(?!range_)").match(k)] \
+                         if multidict[r]]
+    range_filter_keys = [r for r in [k for k in multidict.keys() if re.compile("^filter_range_").match(k)] \
+                         if multidict[r]]
 
     dsl = {}
     if bool_filter_keys or range_filter_keys:
