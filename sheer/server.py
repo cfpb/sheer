@@ -10,8 +10,4 @@ from .wsgi import app_with_config
 def serve_wsgi_app_with_cli_args(args, config):
 
         application = app_with_config(config)
-
-        if config.get('debug'):
-            application.debug = True
-
         application.run(host=args.addr, port=int(args.port))
