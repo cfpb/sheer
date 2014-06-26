@@ -64,6 +64,9 @@ def app_with_config(config):
                 elasticsearch_servers=elasticsearch_servers,
                 es_index=es_index)
 
+    if config.get('debug'):
+        app.debug = True
+
     for here, dirs, files in os.walk(root_dir):
         relpath = os.path.relpath(here, root_dir)
         if relpath == '.':
