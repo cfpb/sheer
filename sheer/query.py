@@ -95,7 +95,7 @@ class QueryHit(object):
     def json_compatible(self):
         hit_dict = self.hit_dict
         fields =  hit_dict.get('fields') or hit_dict.get('_source', {}).keys()
-        return {field: getattr(self, field) for field in fields}
+        return dict((field, getattr(self, field)) for field in fields)
 
 class QueryResults(object):
 
@@ -208,7 +208,7 @@ class Query(object):
             pagenum = int(args_flat['page'])
 
         query_dict.update(args_flat)
-        final_query_dict = {k:v for k,v in query_dict.items() if k in ALLOWED_SEARCH_PARAMS}
+        final_query_dict = dict((k, v) for (k, v) in query_dict.items() if k in ALLOWED_SEARCH_PARAMS)
         final_query_dict['index'] = self.es_index
 
         query_body = {"query": {'filtered':{}}}
