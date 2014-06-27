@@ -40,7 +40,7 @@ def filter_dsl_from_multidict(multidict):
     return dsl
     
 def selected_filters_from_multidict(multidict, field):
-    return multidict.getlist('filter_'+ field)
+    return [k for k in multidict.getlist('filter_'+ field) if k]
 
 def selected_filters_for_field(fieldname):
     multidict = flask.request.args
