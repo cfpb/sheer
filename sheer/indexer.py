@@ -1,7 +1,20 @@
 import os
 import sys
 import codecs
-import json
+
+
+try:
+    # Python 2.7
+    from collections import OrderedDict
+    import json
+
+except ImportError:
+    # Python 2.6
+    # the json included in 2.6 doesn't support oject_pairs_hook
+    from ordereddict import OrderedDict
+    import simplejson as json
+
+
 import copy
 import glob
 import importlib
@@ -11,6 +24,7 @@ from csv import DictReader
 from elasticsearch import Elasticsearch
 
 from sheer.utility import add_site_libs
+from sheer.processors.helpers import IndexHelper
 
 DO_NOT_INDEX = ['_settings/', '_layouts/', '_queries/', '_defaults/', '_lib/']
 
@@ -18,7 +32,7 @@ DO_NOT_INDEX = ['_settings/', '_layouts/', '_queries/', '_defaults/', '_lib/']
 def read_json_file(path):
         if os.path.exists(path):
             with codecs.open(path, 'r', 'utf-8') as json_file:
-                    return json.loads(json_file.read())
+                    return json.loads(json_file.read(), object_pairs_hook=OrderedDict)
 
 
 class ContentProcessor(object):
@@ -45,6 +59,13 @@ def index_location(args, config):
 
     path = config['location']
     add_site_libs(path)
+
+    # This whole routine is probably being too careful
+    # Explicit is better than implicit, though!
+    index_processor_helper = IndexHelper()
+    index_processor_helper.configure(config)
+    # the IndexHelper singleton can be used in processors that
+    # need to talk to elasticsearch
 
     settings_path = os.path.join(path, '_settings/settings.json')
     default_mapping_path = os.path.join(path, '_defaults/mappings.json')
