@@ -1,11 +1,18 @@
 Sheer
 ===================
 
-Sheer will contain:
+Sheer provides:
 
 - Tools for loading arbitrary content into elasticsearch
-- A WSGI server for mixing that content with Jinja2 templates
+- A WSGI server for mixing that content with Jinja2 templates 
+
+Additionally, we hope to provide
 - scripts for pre-generating HTML from said configuration and elasticsearch data.
+- A full-featured REST API
+- Tools for building elasticsearch "mappings" for your data
+
+The best place to start is with a demo site. Here's one:
+https://github.com/rosskarchner/itspecialists
 
 Why Sheer? Why not Jekyll?
 ---------
