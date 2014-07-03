@@ -14,11 +14,16 @@ def serve_requested_file(directory, requested_file, lookup_results=None):
         else:
             return flask.send_from_directory(directory, requested_file)
     elif lookup_results:
-        template_name = '_single.html'
-        template_path = os.path.join(directory, template_name)
-        extra_context = {}
         lookup_name, url_args = lookup_results
         url_args['name'] = lookup_name
+        optional_custom_template = url_args['id'] + ".html"
+        if os.path.exists(os.path.join(directory, optional_custom_template)):
+            template_name = optional_custom_template
+        else: 
+            template_name = '_single.html'
+        template_path = os.path.join(directory, template_name)
+        # do we need to initialize extra_context?
+        extra_context = {}
         extra_context = flask.current_app.url_lookups_by_name[lookup_name](url_args)
         if os.path.exists(template_path):
             with codecs.open(template_path, encoding="utf-8") as template_source:
@@ -30,7 +35,6 @@ def serve_requested_file(directory, requested_file, lookup_results=None):
 def handle_request(diskpath, remainder):
     requested_file = remainder or 'index.html'
     lookup_map = flask.current_app.lookup_map.bind_to_environ(flask.request.environ)
-
     try:
         lookup_result = lookup_map.match()
     except NotFound:
