@@ -19,4 +19,4 @@ class IndexHelper(object):
     def get_document(self, doctype, docid):
         raw_results = self.es.get(index=self.index_name,
                                   doc_type=doctype, id=docid)
-        return QueryHit(raw_results)
+        return QueryHit(raw_results, es=self.es, es_index=self.index_name)

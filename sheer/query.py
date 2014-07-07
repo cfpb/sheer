@@ -27,10 +27,11 @@ ALLOWED_SEARCH_PARAMS = ('doc_type',
         'suggest_field', 'suggest_mode', 'suggest_size', 'suggest_text', 'timeout',
         'version')
 
-@memoized
-def mapping_for_type(typename):
-    es = flask.current_app.es
-    es_index =flask.current_app.es_index
+def mapping_for_type(typename, es=None, es_index=None):
+    if not es:
+        es = flask.current_app.es
+    if not es_index:
+        es_index =flask.current_app.es_index
 
     return es.indices.get_mapping(index=es_index, doc_type= typename) 
 
@@ -73,10 +74,10 @@ def coerced_value(value, datatype):
         
 
 class QueryHit(object):
-    def __init__(self, hit_dict):
+    def __init__(self, hit_dict, es=None, es_index=None):
         self.hit_dict = hit_dict
         self.type = hit_dict['_type']
-        self.mapping = mapping_for_type(self.type)
+        self.mapping = mapping_for_type(self.type, es=es, es_index=es_index )
 
     @property
     def permalink(self):
