@@ -3,6 +3,7 @@ import os.path
 import re
 import functools
 import markdown
+import datetime
 
 import flask
 import elasticsearch
@@ -97,6 +98,11 @@ def app_with_config(config):
                                         flask.request.path,
                                         append='_queries')
         context = {'queries': QueryFinder(search_path)}
+        return context
+
+    @app.context_processor
+    def current_date():
+        context = {'current_date': datetime.datetime.now()}
         return context
 
     @app.template_filter(name='date')
