@@ -40,7 +40,7 @@ if __name__ == '__main__':
     for p in [parser, index_parser, server_parser]:
         p.add_argument('--debug', help="print debugging output to the console", action='store_true', default=DEBUG)
         p.add_argument('--location', '-l', default=LOCATION, help="Directory you want to operate on. You can also set the SHEER_LOCATION environment variable.")
-        p.add_argument('--elasticsearch', '-e', default=ELASTICSEARCH_HOSTS, help="elasticsearch host:port pairs. Seperate hosts with commas. Default is localhost:9200. You can also set the SHEER_ELASTICSEARCH_HOSTS environment variable.")
+        p.add_argument('--elasticsearch', '-e', default=ELASTICSEARCH_HOSTS, help="elasticsearch host:port pairs. Separate hosts with commas. Default is localhost:9200. You can also set the SHEER_ELASTICSEARCH_HOSTS environment variable.")
         p.add_argument('--index', '-i', default=ELASTICSEARCH_INDEX, help="elasticsearch index name. Default is 'content'. You can also set the SHEER_ELASTICSEARCH_INDEX environment variable.")
 
     args = parser.parse_args()
