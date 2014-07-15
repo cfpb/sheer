@@ -59,6 +59,7 @@ def coerced_value(value, datatype):
     TYPE_MAP={'string': unicode,
               'date': dateutil.parser.parse,
               'dict': dict,
+              'float':float,
               'long':float}
 
     coercer = TYPE_MAP[datatype]
