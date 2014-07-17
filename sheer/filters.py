@@ -1,6 +1,6 @@
 import flask
 import re
-import datetime
+from dateutil.parser import parse
 
 def filter_dsl_from_multidict(multidict):
     # Split the filters between 'range' and 'bool', making sure the query value isn't blank
@@ -42,8 +42,8 @@ def filter_dsl_from_multidict(multidict):
         # First check if both date_lte and date_gte are present
         # If the 'start' date is after the 'end' date, swap them
         if 'date' in range_clause['range'] and all(x in range_clause['range']['date'] for x in ('lte', 'gte')):
-            if datetime.datetime.strptime(range_clause['range']['date']['gte'], "%Y-%m") > \
-            datetime.datetime.strptime(range_clause['range']['date']['lte'], "%Y-%m"):
+            if parse(range_clause['range']['date']['gte']) > \
+            parse(range_clause['range']['date']['lte']):
                 range_clause['range']['date']['gte'], range_clause['range']['date']['lte'] = \
                 range_clause['range']['date']['lte'], range_clause['range']['date']['gte']
         dsl["and"].append(range_clause)

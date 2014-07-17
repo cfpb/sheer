@@ -44,3 +44,17 @@ class testArgParsing(object):
         filter_dsl = filters.filter_dsl_from_multidict(args)
         assert(filter_dsl['and'][0]['range']['date']['gte'] == '2013-6')
         assert(filter_dsl['and'][0]['range']['date']['lte'] == '2014-6')
+
+    def test_date_validation_with_days_correct_range(self):
+        args = MultiDict([('filter_range_date_gte', '2014-1-23'),
+                          ('filter_range_date_lte', '2014-6-23')])
+        filter_dsl = filters.filter_dsl_from_multidict(args)
+        assert(filter_dsl['and'][0]['range']['date']['gte'] == '2014-1-23')
+        assert(filter_dsl['and'][0]['range']['date']['lte'] == '2014-6-23')
+
+    def test_date_validation_with_days_incorrect_range(self):
+        args = MultiDict([('filter_range_date_gte', '2014-6-23'),
+                          ('filter_range_date_lte', '2014-1-23')])
+        filter_dsl = filters.filter_dsl_from_multidict(args)
+        assert(filter_dsl['and'][0]['range']['date']['gte'] == '2014-1-23')
+        assert(filter_dsl['and'][0]['range']['date']['lte'] == '2014-6-23')
