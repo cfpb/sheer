@@ -204,12 +204,13 @@ class Query(object):
         request = flask.request
         filters = filter_dsl_from_multidict(request.args)
         args_flat = request.args.to_dict(flat=True)
-        args_flat_filtered = [(k,v) for k,v in request.args.items() if v]
+
 
         if 'page' in args_flat:
             args_flat['from_'] = int(query_dict.get('size', '10')) * (int(args_flat['page'])-1)
             pagenum = int(args_flat['page'])
 
+        args_flat_filtered = dict([(k,v) for k,v in args_flat.items() if v])
         query_dict.update(args_flat_filtered)
         final_query_dict = dict((k, v) for (k, v) in query_dict.items() if k in ALLOWED_SEARCH_PARAMS)
         final_query_dict['index'] = self.es_index
