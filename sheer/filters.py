@@ -1,6 +1,7 @@
 import flask
 import re
-import datetime
+import calendar
+from dateutil.parser import parse
 
 def filter_dsl_from_multidict(multidict):
     # Split the filters between 'range' and 'bool', making sure the query value isn't blank
@@ -36,18 +37,26 @@ def filter_dsl_from_multidict(multidict):
             # If there are multiples of the same date filter, this will take the first
             value = multidict.getlist(key)[0]
             range_clause["range"][field][operator] = value
-
+        
         # Validate date range input
         
         # First check if both date_lte and date_gte are present
         # If the 'start' date is after the 'end' date, swap them
-        if 'date' in range_clause['range'] and all(x in range_clause['range']['date'] for x in ('lte', 'gte')):
-            if datetime.datetime.strptime(range_clause['range']['date']['gte'], "%Y-%m") > \
-            datetime.datetime.strptime(range_clause['range']['date']['lte'], "%Y-%m"):
+        if 'date' in range_clause['range']:
+            if all(x in range_clause['range']['date'] for x in ('lte', 'gte')) and \
+             parse(range_clause['range']['date']['gte']) > parse(range_clause['range']['date']['lte']):
                 range_clause['range']['date']['gte'], range_clause['range']['date']['lte'] = \
                 range_clause['range']['date']['lte'], range_clause['range']['date']['gte']
+            # If either date matches the YYYY-M[M] format, append the appropriate day
+            if 'lte' in range_clause['range']['date'] and \
+            re.compile("^[0-9]{4}-[0-9]{1,2}$").match(range_clause['range']['date']['lte']):
+                year, month = range_clause['range']['date']['lte'].split('-')
+                last_day_of_month = calendar.monthrange(int(year), int(month))[1]
+                range_clause['range']['date']['lte'] += "-{}".format(last_day_of_month)
+            if 'gte' in range_clause['range']['date'] and \
+            re.compile("^[0-9]{4}-[0-9]{1,2}$").match(range_clause['range']['date']['gte']):
+                range_clause['range']['date']['gte'] += "-1"
         dsl["and"].append(range_clause)
-
     return dsl
     
 def selected_filters_from_multidict(multidict, field):
