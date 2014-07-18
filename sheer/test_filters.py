@@ -31,19 +31,20 @@ class testArgParsing(object):
         assert (('cats') in selected)
         assert (('dogs') in selected)
 
+class TestDateValidation(object):
     def test_date_validation_incorrect_range(self):
         args = MultiDict([('filter_range_date_gte', '2014-6'),
                           ('filter_range_date_lte', '2013-6')])
         filter_dsl = filters.filter_dsl_from_multidict(args)
-        assert(filter_dsl['and'][0]['range']['date']['gte'] == '2013-6')
-        assert(filter_dsl['and'][0]['range']['date']['lte'] == '2014-6')
+        assert(filter_dsl['and'][0]['range']['date']['gte'] == '2013-6-1')
+        assert(filter_dsl['and'][0]['range']['date']['lte'] == '2014-6-30')
 
     def test_date_validation_correct_range(self):
         args = MultiDict([('filter_range_date_gte', '2013-6'),
                           ('filter_range_date_lte', '2014-6')])
         filter_dsl = filters.filter_dsl_from_multidict(args)
-        assert(filter_dsl['and'][0]['range']['date']['gte'] == '2013-6')
-        assert(filter_dsl['and'][0]['range']['date']['lte'] == '2014-6')
+        assert(filter_dsl['and'][0]['range']['date']['gte'] == '2013-6-1')
+        assert(filter_dsl['and'][0]['range']['date']['lte'] == '2014-6-30')
 
     def test_date_validation_with_days_correct_range(self):
         args = MultiDict([('filter_range_date_gte', '2014-1-23'),
@@ -58,3 +59,18 @@ class testArgParsing(object):
         filter_dsl = filters.filter_dsl_from_multidict(args)
         assert(filter_dsl['and'][0]['range']['date']['gte'] == '2014-1-23')
         assert(filter_dsl['and'][0]['range']['date']['lte'] == '2014-6-23')
+
+    def test_default_days_correct_range(self):
+        args = MultiDict([('filter_range_date_gte', '2014-1'),
+                          ('filter_range_date_lte', '2014-6')])
+        filter_dsl = filters.filter_dsl_from_multidict(args)
+        print filter_dsl
+        assert(filter_dsl['and'][0]['range']['date']['gte'] == '2014-1-1')
+        assert(filter_dsl['and'][0]['range']['date']['lte'] == '2014-6-30')
+
+    def test_default_days_incorrect_range(self):
+        args = MultiDict([('filter_range_date_gte', '2014-6'),
+                          ('filter_range_date_lte', '2014-1')])
+        filter_dsl = filters.filter_dsl_from_multidict(args)
+        assert(filter_dsl['and'][0]['range']['date']['gte'] == '2014-1-1')
+        assert(filter_dsl['and'][0]['range']['date']['lte'] == '2014-6-30')
