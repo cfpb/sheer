@@ -113,6 +113,14 @@ def app_with_config(config):
     def markdown_filter(raw_text):
         return markdown.markdown(raw_text)
 
+    @app.errorhandler(404)
+    def page_not_found(e):
+        return flask.render_template('404.html'), 404
+
+    @app.errorhandler(500)
+    def page_not_found(e):
+        return flask.render_template('500.html'), 500
+
     add_query_utilities(app)
     add_lookups_to_sheer(app)
     add_apis_to_sheer(app)
