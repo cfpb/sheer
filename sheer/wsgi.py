@@ -40,7 +40,7 @@ class Sheer(flask.Flask):
         request = flask.request
         search_path = build_search_path(self.root_dir,
                                         request.path,
-                                        append='_layouts',
+                                        append=['_layouts','_includes'],
                                         include_start_directory=True)
 
         print "\a"
@@ -97,7 +97,7 @@ def app_with_config(config):
         search_path = build_search_path(app.root_dir,
                                         flask.request.path,
                                         append='_queries')
-        context = {'queries': QueryFinder(search_path)}
+        context = {'queries': QueryFinder()}
         return context
 
     @app.context_processor
