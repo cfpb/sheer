@@ -24,7 +24,7 @@ def add_to_sheer(app):
     class QueryResource(restful.Resource):
         def get(self, name):
             query_finder = default_query_finder()
-            query = getattr(query_finder, name)
+            query = getattr(query_finder, name) or flask.abort(404)
             request = flask.request
             return query.search_with_url_arguments()
 
