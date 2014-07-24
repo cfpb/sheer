@@ -119,7 +119,7 @@ def app_with_config(config):
         # TODO: this seems silly 
         # We shouldn't even need to send the request object,
         # and the second argument should usually be request.path anyways
-        search_path = build_search_path_for_request(request, request.path)
+        search_path = build_search_path_for_request(request, request.path, append=['_layouts','_includes'], include_start_directory=True)
         template_path = find_in_search_path('%s.html' % error_code, search_path)
 
         if template_path:
