@@ -1,12 +1,9 @@
 from urlparse import urljoin
 from flask import request
 from werkzeug.contrib.atom import AtomFeed
-import werkzeug.routing
 import flask
 
 from .query import QueryFinder
-from .utility import build_search_path
-
 
 def make_external(url):
     return urljoin(request.url_root, url)
