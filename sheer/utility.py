@@ -34,7 +34,7 @@ def add_site_libs(path):
     sys.path.append(libs_dir)
 
 
-def build_search_path(root_dir, seeking_path, append=None, include_start_directory=False):
+def build_search_path(root_dir, seeking_path, append=None, include_start_directory=True):
     rel_search_path = []
 
     rel_search_path += path_ancestors(seeking_path)
