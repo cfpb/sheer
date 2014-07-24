@@ -16,6 +16,7 @@ from .views import handle_request
 from .utility import build_search_path, add_site_libs
 from .query import QueryFinder, add_query_utilities
 from .filters import add_filter_utilities
+from .feeds import add_feeds_to_sheer
 
 IGNORE_PATH_RE = [r'^[._].+', r'(_includes|_layouts)($|/)']
 IGNORE_PATH_RE_COMPILED = [re.compile(pattern, flags=re.M) for pattern in IGNORE_PATH_RE]
@@ -116,6 +117,7 @@ def app_with_config(config):
     add_query_utilities(app)
     add_lookups_to_sheer(app)
     add_apis_to_sheer(app)
+    add_feeds_to_sheer(app)
     add_filter_utilities(app)
 
     return app
