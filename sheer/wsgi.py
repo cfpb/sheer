@@ -126,7 +126,7 @@ def app_with_config(config):
             with codecs.open(template_path, encoding="utf-8") as template_source:
                 return flask.render_template_string(template_source.read()), error_code
         else:
-            return "Please provide a 404.html!"
+            return "Please provide a %s.html!" % error_code
 
     @app.errorhandler(404)
     def page_not_found(e):

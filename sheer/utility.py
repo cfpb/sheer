@@ -55,10 +55,11 @@ def build_search_path(root_dir, seeking_path, append=None, include_start_directo
 
 def build_search_path_for_request(request,
                                   seeking_path,
+                                  append=None,
                                   include_start_directory=False):
     root_dir = flask.current_app.root_dir
 
-    return build_search_path(root_dir, seeking_path, include_start_directory=include_start_directory)
+    return build_search_path(root_dir, seeking_path, append=append,include_start_directory=include_start_directory)
 
 
 def find_in_search_path(filename, paths):
