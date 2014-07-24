@@ -39,16 +39,25 @@ def build_search_path(root_dir, seeking_path, append=None, include_start_directo
 
     rel_search_path += path_ancestors(seeking_path)
 
-    if append:
-        rel_search_path = [os.path.join(p,append) for p in rel_search_path]
+    if append and type(append) in (str, unicode):
+        append_paths = [append]
+    elif append:
+        append_paths = append
+    else:
+        append_paths = []
 
-    search_path = [os.path.join(root_dir, p) for p in rel_search_path]
 
-    if append and include_start_directory:
-        rel_seeking_path = seeking_path.lstrip('/')
-        complete_path = os.path.join(root_dir, rel_seeking_path)
-        dirname = os.path.dirname(complete_path) + '/'
-        search_path.insert(0,dirname)
+    naked_paths = [os.path.join(root_dir, p) for p in rel_search_path]
+
+    search_path = []
+
+    for path in naked_paths:
+        if include_start_directory:
+            search_path.append(path)
+
+        for extra_path in append_paths:
+            extended_path = os.path.join(path,extra_path)
+            search_path.append(extended_path)
 
     return search_path
 
