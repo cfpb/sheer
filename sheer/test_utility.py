@@ -12,7 +12,7 @@ class testSearchpaths:
         assert('/var/' not in paths)
 
     def test_searchpath_with_append(self):
-        paths = build_search_path('/var/sheer', '/my/site/is/cool/foo.html', append='_layouts')
+        paths = build_search_path('/var/sheer', '/my/site/is/cool/foo.html', append='_layouts', include_start_directory=False)
         assert('/var/sheer/my/site/_layouts' in paths)
         assert('/var/sheer/my/_layouts' in paths)
         assert('/var/sheer/_layouts' in paths)

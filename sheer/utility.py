@@ -34,32 +34,41 @@ def add_site_libs(path):
     sys.path.append(libs_dir)
 
 
-def build_search_path(root_dir, seeking_path, append=None, include_start_directory=False):
+def build_search_path(root_dir, seeking_path, append=None, include_start_directory=True):
     rel_search_path = []
 
     rel_search_path += path_ancestors(seeking_path)
 
-    if append:
-        rel_search_path = [os.path.join(p,append) for p in rel_search_path]
+    if append and type(append) in (str, unicode):
+        append_paths = [append]
+    elif append:
+        append_paths = append
+    else:
+        append_paths = []
 
-    search_path = [os.path.join(root_dir, p) for p in rel_search_path]
 
-    if append and include_start_directory:
-        rel_seeking_path = seeking_path.lstrip('/')
-        complete_path = os.path.join(root_dir, rel_seeking_path)
-        dirname = os.path.dirname(complete_path) + '/'
-        search_path.insert(0,dirname)
+    naked_paths = [os.path.join(root_dir, p) for p in rel_search_path]
+
+    search_path = []
+
+    for path in naked_paths:
+        if include_start_directory:
+            search_path.append(path)
+
+        for extra_path in append_paths:
+            extended_path = os.path.join(path,extra_path)
+            search_path.append(extended_path)
 
     return search_path
 
 
 def build_search_path_for_request(request,
                                   seeking_path,
-                                  dirname='.',
+                                  append=None,
                                   include_start_directory=False):
     root_dir = flask.current_app.root_dir
 
-    return build_search_path(root_dir, dirname, include_start_directory=include_start_directory)
+    return build_search_path(root_dir, seeking_path, append=append,include_start_directory=include_start_directory)
 
 
 def find_in_search_path(filename, paths):

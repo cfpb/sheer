@@ -2,6 +2,7 @@ import os
 import os.path
 import re
 import functools
+import codecs
 import markdown
 import datetime
 
@@ -13,7 +14,7 @@ from .lookups import add_lookups_to_sheer
 from .apis import add_apis_to_sheer
 from .templates import date_formatter
 from .views import handle_request
-from .utility import build_search_path, add_site_libs
+from .utility import build_search_path, add_site_libs,build_search_path_for_request, find_in_search_path
 from .query import QueryFinder, add_query_utilities
 from .filters import add_filter_utilities
 from .feeds import add_feeds_to_sheer
@@ -41,7 +42,7 @@ class Sheer(flask.Flask):
         request = flask.request
         search_path = build_search_path(self.root_dir,
                                         request.path,
-                                        append='_layouts',
+                                        append=['_layouts','_includes'],
                                         include_start_directory=True)
 
         print "\a"
@@ -98,7 +99,7 @@ def app_with_config(config):
         search_path = build_search_path(app.root_dir,
                                         flask.request.path,
                                         append='_queries')
-        context = {'queries': QueryFinder(search_path)}
+        context = {'queries': QueryFinder()}
         return context
 
     @app.context_processor
@@ -113,6 +114,29 @@ def app_with_config(config):
     @app.template_filter(name='markdown')
     def markdown_filter(raw_text):
         return markdown.markdown(raw_text)
+
+    def serve_error_page(error_code):
+        request = flask.request
+        # TODO: this seems silly 
+        # We shouldn't even need to send the request object,
+        # and the second argument should usually be request.path anyways
+        search_path = build_search_path_for_request(request, request.path, append=['_layouts','_includes'], include_start_directory=True)
+        template_path = find_in_search_path('%s.html' % error_code, search_path)
+
+        if template_path:
+            with codecs.open(template_path, encoding="utf-8") as template_source:
+                return flask.render_template_string(template_source.read()), error_code
+        else:
+            return "Please provide a %s.html!" % error_code
+
+    @app.errorhandler(404)
+    def page_not_found(e):
+        return serve_error_page(404)
+        
+
+    @app.errorhandler(500)
+    def general_error(e):
+        return serve_error_page(500)
 
     add_query_utilities(app)
     add_lookups_to_sheer(app)

@@ -249,22 +249,18 @@ class Query(object):
 
 class QueryFinder(object):
 
-    def __init__(self, searchpath = None):
+    def __init__(self):
         app = flask.current_app
         self.es = app.es
         self.es_index = app.es_index
-
-        if searchpath:
-            self.searchpath = searchpath
-        else:
-            self.searchpath = [os.path.join(flask.current_app.root_dir, '_queries')]
+        self.queries_dir = os.path.join(app.root_dir,'_queries')
 
     def __getattr__(self, name):
         query_filename = name + ".json"
-        found_file = find_in_search_path(query_filename, self.searchpath)
+        query_file_path = os.path.join(self.queries_dir,query_filename)
 
-        if found_file is not None:
-            query = Query(found_file, self.es_index)
+        if os.path.exists(query_file_path):
+            query = Query(query_file_path, self.es_index)
             return query
 
 class QueryJsonEncoder(json.JSONEncoder):
