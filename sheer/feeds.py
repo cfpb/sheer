@@ -10,7 +10,7 @@ def make_external(url):
 
 def add_feeds_to_sheer(app):
 
-    @app.route('/feed/<name>')
+    @app.route('/feed/<name>/')
     def recent_feed(name):
         feed = AtomFeed('Consumer Financial Protection Bureau - {}'.format(name), 
                         feed_url=request.url, 
