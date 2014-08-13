@@ -181,10 +181,6 @@ class Query(object):
         query_dict.update(kwargs)
         query_dict['body'] = query_body
 
-
-        if 'sort' not in query_dict:
-            query_dict['sort'] = "date:desc"
-
         response = self.es.search(**query_dict)
 
         response['query']= query_dict
@@ -197,9 +193,6 @@ class Query(object):
         query_dict = json.loads(file(self.filename).read())
         query_dict.update(kwargs)
         pagenum =1
-
-        if 'sort' not in query_dict:
-            query_dict['sort'] = "date:desc"
         
         request = flask.request
         filters = filter_dsl_from_multidict(request.args)

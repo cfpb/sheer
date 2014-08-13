@@ -1,6 +1,7 @@
 import flask
 import re
 import calendar
+import datetime
 from dateutil.parser import parse
 
 def filter_dsl_from_multidict(multidict):
@@ -44,7 +45,8 @@ def filter_dsl_from_multidict(multidict):
         # If the 'start' date is after the 'end' date, swap them
         if 'date' in range_clause['range']:
             if all(x in range_clause['range']['date'] for x in ('lte', 'gte')) and \
-             parse(range_clause['range']['date']['gte']) > parse(range_clause['range']['date']['lte']):
+             parse(range_clause['range']['date']['gte'], default=datetime.date.today().replace(day=1)) > \
+             parse(range_clause['range']['date']['lte'], default=datetime.date.today().replace(day=1)):
                 range_clause['range']['date']['gte'], range_clause['range']['date']['lte'] = \
                 range_clause['range']['date']['lte'], range_clause['range']['date']['gte']
             # If either date matches the YYYY-M[M] format, append the appropriate day
