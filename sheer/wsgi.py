@@ -85,7 +85,7 @@ def app_with_config(config):
         seeker_handler = functools.partial(handle_request, diskpath=here)
         index_handler = functools.partial(handle_request, diskpath=here, remainder=None)
 
-        seeker_url = relurl + '<remainder>'
+        seeker_url = relurl + '<remainder>/'
         index_url = relurl
 
         seeker_view_name = relurl.replace('/','_')
