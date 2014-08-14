@@ -18,6 +18,7 @@ from .utility import build_search_path, add_site_libs,build_search_path_for_requ
 from .query import QueryFinder, add_query_utilities
 from .filters import add_filter_utilities
 from .feeds import add_feeds_to_sheer
+from .indexer import read_json_file
 
 IGNORE_PATH_RE = [r'^[._].+', r'(_includes|_layouts)($|/)']
 IGNORE_PATH_RE_COMPILED = [re.compile(pattern, flags=re.M) for pattern in IGNORE_PATH_RE]
@@ -93,6 +94,21 @@ def app_with_config(config):
 
         app.add_url_rule(seeker_url,seeker_view_name, seeker_handler)
         app.add_url_rule(index_url,index_view_name, index_handler)
+
+    blueprints_path = os.path.join(root_dir, '_settings/blueprints.json')
+    if os.path.exists(blueprints_path):
+        blueprints = read_json_file(blueprints_path)
+        for key, value in blueprints.iteritems():
+            package = value['package']
+            module = value['module']
+
+            # Using a less elegant way of doing dynamic imports to support 2.6
+            try:
+                blueprint = __import__(package, fromlist=[module])
+            except ImportError:
+                print "Error importing package {}".format(key)
+                continue
+            app.register_blueprint(getattr(blueprint, module))
 
     @app.context_processor
     def add_queryfinder():
