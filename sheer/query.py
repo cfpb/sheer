@@ -207,8 +207,8 @@ class Query(object):
         response['query']= query_dict
         return QueryResults(response,pagenum )
 
-    def possible_values_for(self, field):
-        results = self.search_with_url_arguments(term_facets=[field])
+    def possible_values_for(self, field, **kwargs):
+        results = self.search_with_url_arguments(term_facets=[field], **kwargs)
         return results.facets(field)
         
 
