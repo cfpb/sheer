@@ -78,13 +78,12 @@ class QueryHit(object):
     def __init__(self, hit_dict, es=None, es_index=None):
         self.hit_dict = hit_dict
         self.type = hit_dict['_type']
-        self.type_for_url = hit_dict['_source'].get('type_for_url') or hit_dict['_type']
         self.mapping = mapping_for_type(self.type, es=es, es_index=es_index )
 
     @property
     def permalink(self):
         app = flask.current_app
-        rule = app.permalinks_by_type.get(self.type_for_url)
+        rule = app.permalinks_by_type.get(self.type)
         if rule:
             build_with=dict(id = self.hit_dict['_id'])
             _ , url = rule.build(build_with)
