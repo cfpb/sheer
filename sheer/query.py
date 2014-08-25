@@ -78,12 +78,13 @@ class QueryHit(object):
     def __init__(self, hit_dict, es=None, es_index=None):
         self.hit_dict = hit_dict
         self.type = hit_dict['_type']
+        self.type_for_url = hit_dict['_source'].get('type_for_url') or hit_dict['_type']
         self.mapping = mapping_for_type(self.type, es=es, es_index=es_index )
 
     @property
     def permalink(self):
         app = flask.current_app
-        rule = app.permalinks_by_type.get(self.type)
+        rule = app.permalinks_by_type.get(self.type_for_url)
         if rule:
             build_with=dict(id = self.hit_dict['_id'])
             _ , url = rule.build(build_with)
@@ -165,58 +166,49 @@ class Query(object):
         self.__results = None
         self.json_safe = json_safe
 
-    def search(self, term_facets=None, **kwargs):
-        query_dict = json.loads(file(self.filename).read())
-        query_dict['index'] = self.es_index
-
+    def search_with_url_arguments(self, term_facets=None, **kwargs):
+        query_file = json.loads(file(self.filename).read())
+        query_dict = query_file['query']
+        query_dict.update(kwargs)
+        pagenum = 1
+        
+        request = flask.request
+        url_filters = filter_dsl_from_multidict(request.args)
+        args_flat = request.args.to_dict(flat=True)
         query_body = {}
 
-        if term_facets != None:
+        if term_facets:
             facets_dsl = {}
             if type(term_facets) is str:
                 term_facets = [term_facets] # so we can treat it as a list
             for fieldname in term_facets:
                 facets_dsl[fieldname]={"terms":{"field":fieldname, "size":10000}}
-        query_body["facets"] = facets_dsl
-        query_dict.update(kwargs)
-        query_dict['body'] = query_body
+            query_body["facets"] = facets_dsl
+        else:
+            if 'page' in args_flat:
+                args_flat['from_'] = int(query_dict.get('size', '10')) * (int(args_flat['page'])-1)
+                pagenum = int(args_flat['page'])
 
-        response = self.es.search(**query_dict)
+            args_flat_filtered = dict([(k,v) for k,v in args_flat.items() if v])
+            query_dict.update(args_flat_filtered)
+            query_body['query'] = {'filtered':{'filter': {}}}
+            if url_filters:
+                query_body['query']['filtered']['filter']['and'] = [f for f in url_filters]
 
-        response['query']= query_dict
-        return QueryResults(response)
-
-    def search_with_url_arguments(self, **kwargs):
-        # TODO: DRY with above
-        # TODO: Seriously.
-
-        query_dict = json.loads(file(self.filename).read())
-        query_dict.update(kwargs)
-        pagenum =1
-        
-        request = flask.request
-        filters = filter_dsl_from_multidict(request.args)
-        args_flat = request.args.to_dict(flat=True)
-
-
-        if 'page' in args_flat:
-            args_flat['from_'] = int(query_dict.get('size', '10')) * (int(args_flat['page'])-1)
-            pagenum = int(args_flat['page'])
-
-        args_flat_filtered = dict([(k,v) for k,v in args_flat.items() if v])
-        query_dict.update(args_flat_filtered)
+            if 'filters' in query_file:
+                if 'and' not in query_body['query']['filtered']['filter']:
+                    query_body['query']['filtered']['filter']['and'] = []
+                for json_filter in query_file['filters']:
+                    query_body['query']['filtered']['filter']['and'].append(json_filter)
         final_query_dict = dict((k, v) for (k, v) in query_dict.items() if k in ALLOWED_SEARCH_PARAMS)
         final_query_dict['index'] = self.es_index
-
-        query_body = {"query": {'filtered':{}}}
-        query_body['query']['filtered']['filter'] = filters
         final_query_dict['body'] = query_body
         response = self.es.search(**final_query_dict)
         response['query']= query_dict
         return QueryResults(response,pagenum )
 
     def possible_values_for(self, field):
-        results = self.search(term_facets=[field])
+        results = self.search_with_url_arguments(term_facets=[field])
         return results.facets(field)
         
 
