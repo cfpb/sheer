@@ -11,9 +11,7 @@ def filter_dsl_from_multidict(multidict):
     range_filter_keys = [r for r in [k for k in multidict.keys() if re.compile("^filter_range_").match(k)] \
                          if multidict[r]]
 
-    dsl = {}
-    if bool_filter_keys or range_filter_keys:
-        dsl["and"] = []
+    final_filters = []
     if bool_filter_keys:
         bool_clause = {"bool":{"must":[], "should":[], "must_not":[]}}
         for key in bool_filter_keys:
@@ -23,7 +21,7 @@ def filter_dsl_from_multidict(multidict):
                 term_clause = {"term":{}}
                 term_clause["term"][field] = val
                 bool_clause["bool"]["should"].append(term_clause)
-        dsl["and"].append(bool_clause)
+        final_filters.append(bool_clause)
 
 
     if range_filter_keys:
@@ -58,8 +56,8 @@ def filter_dsl_from_multidict(multidict):
             if 'gte' in range_clause['range']['date'] and \
             re.compile("^[0-9]{4}-[0-9]{1,2}$").match(range_clause['range']['date']['gte']):
                 range_clause['range']['date']['gte'] += "-1"
-        dsl["and"].append(range_clause)
-    return dsl
+        final_filters.append(range_clause)
+    return final_filters
     
 def selected_filters_from_multidict(multidict, field):
     return [k for k in multidict.getlist('filter_'+ field) if k]
