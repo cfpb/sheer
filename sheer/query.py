@@ -53,7 +53,7 @@ def datatype_for_fieldname_in_mapping(fieldname, hit_type, mapping_dict):
         return None
 
 def coerced_value(value, datatype):
-    if datatype == None:
+    if datatype == None or value == None:
         return value
 
     TYPE_MAP={'string': unicode,
