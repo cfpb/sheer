@@ -14,6 +14,8 @@ Additionally, we hope to provide
 The best place to start is with a demo site. Here's one:
 https://github.com/rosskarchner/itspecialists
 
+Sheer is a Python/Flask application. It requires Elastic Search.
+
 Why Sheer? Why not Jekyll?
 ---------
 
@@ -25,7 +27,7 @@ Jekyll is pretty darn compelling, for a number of reasons:
 - Bring your own version control
 - On the whole, less mysterious than CMS's.
 
-We want those advantages, but we dont' want to have to anticipate every way our editorial team might wish to slice and serve content. 
+We want those advantages, but we don't want to have to anticipate every way our editorial team might wish to slice and serve content. 
 We don't want to have to anticipate what developers will want to do with our API, or which content third party publishers will want to syndicate on their site
 , or which collection of content people will want to subscribe to with RSS. 
 We want to pre-generate (Jekyll-style) the common pages, without precluding the stuff we haven't thought of yet.
