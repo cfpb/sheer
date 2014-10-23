@@ -52,7 +52,7 @@ def filter_dsl_from_multidict(multidict):
             re.compile("^[0-9]{4}-[0-9]{1,2}$").match(range_clause['range']['date']['lte']):
                 year, month = range_clause['range']['date']['lte'].split('-')
                 last_day_of_month = calendar.monthrange(int(year), int(month))[1]
-                range_clause['range']['date']['lte'] += "-{}".format(last_day_of_month)
+                range_clause['range']['date']['lte'] += "-{0}".format(last_day_of_month)
             if 'gte' in range_clause['range']['date'] and \
             re.compile("^[0-9]{4}-[0-9]{1,2}$").match(range_clause['range']['date']['gte']):
                 range_clause['range']['date']['gte'] += "-1"

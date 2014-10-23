@@ -19,7 +19,7 @@ def make_external(url):
 def get_feed_settings(name):
     app = flask.current_app
     queries_dir = os.path.join(app.root_dir,'_queries')
-    query_path = os.path.join(queries_dir, '{}.json'.format(name))
+    query_path = os.path.join(queries_dir, '{0}.json'.format(name))
     if os.path.exists(query_path):
         query_file = read_json_file(query_path)
         return query_file.get('feed')

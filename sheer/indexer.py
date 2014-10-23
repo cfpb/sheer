@@ -2,17 +2,15 @@ import os
 import sys
 import codecs
 
-
-try:
-    # Python 2.7
-    from collections import OrderedDict
-    import json
-
-except ImportError:
+if sys.version_info[0:2] == (2,6):
     # Python 2.6
-    # the json included in 2.6 doesn't support oject_pairs_hook
+    # the json included in 2.6 doesn't support object_pairs_hook
     from ordereddict import OrderedDict
     import simplejson as json
+else:
+    # Python 2.7 or higher
+    from collections import OrderedDict
+    import json
 
 
 import copy
