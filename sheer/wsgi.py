@@ -106,7 +106,7 @@ def app_with_config(config):
             try:
                 blueprint = __import__(package, fromlist=[module])
             except ImportError:
-                print "Error importing package {}".format(key)
+                print "Error importing package {0}".format(key)
                 continue
             app.register_blueprint(getattr(blueprint, module))
 
