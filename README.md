@@ -34,6 +34,49 @@ We want to pre-generate (Jekyll-style) the common pages, without precluding the 
 
 Our hypothesis is that we can combine some of Jekyll's ideas with a full-featured search engine, and get something powerful, flexible, productive, and fun.
 
+Installation
+------------
+
+To get started with Sheer:
+
+Install [Elasticsearch](http://www.elasticsearch.org/) however you'd like. (we use [homebrew](http://brew.sh/))::
+
+```
+$ brew install elasticsearch
+```
+
+Check out the sheer Github project:
+```
+$ git clone https://github.com/cfpb/sheer.git
+```
+
+create a virtualenv for sheer:
+```
+$ mkvirtualenv sheer
+```
+
+The new virtualenv will activate right away. to activate it later on (say, in a new terminal session) use the command "workon sheer"
+
+Install sheer into the virtualenv with the -e flag (which allows you to make changes to sheer itself):
+
+```
+$ pip install -e ~/path/to/sheer
+```
+
+Install sheer's python requirements:
+
+```
+$ pip install -r ~/path/to/sheer/requirements.txt
+```
+
+You should now be able to run the sheer command:
+```
+$ sheer
+
+usage: sheer [-h] [--debug] {inspect,index,serve} ...
+sheer: error: too few arguments
+```
+
 Status
 ------------
 
