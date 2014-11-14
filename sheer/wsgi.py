@@ -10,10 +10,9 @@ import flask
 import elasticsearch
 
 from jinja2.loaders import FileSystemLoader
-from .lookups import add_lookups_to_sheer
 from .apis import add_apis_to_sheer
 from .templates import date_formatter
-from .views import handle_request
+from .views import handle_request, serve_error_page
 from .utility import build_search_path, add_site_libs,build_search_path_for_request, find_in_search_path
 from .query import QueryFinder, add_query_utilities
 from .filters import add_filter_utilities
@@ -71,30 +70,8 @@ def app_with_config(config):
     if config.get('debug'):
         app.debug = True
 
-    for here, dirs, files in os.walk(root_dir):
-        relpath = os.path.relpath(here, root_dir)
-        if relpath == '.':
-            relurl = '/'
-        else:
-            relurl = '/' + relpath + '/'
 
-        if should_ignore_this_path(relpath):
-            continue
-
-        # "seeker" is for lookup files, "index" serves directory roots
-
-        seeker_handler = functools.partial(handle_request, diskpath=here)
-        index_handler = functools.partial(handle_request, diskpath=here, remainder=None)
-
-        seeker_url = relurl + '<remainder>/'
-        index_url = relurl
-
-        seeker_view_name = relurl.replace('/','_')
-        index_view_name = seeker_view_name + '_index'
-
-        app.add_url_rule(seeker_url,seeker_view_name, seeker_handler)
-        app.add_url_rule(index_url,index_view_name, index_handler)
-
+    # Load blueprints
     blueprints_path = os.path.join(root_dir, '_settings/blueprints.json')
     if os.path.exists(blueprints_path):
         blueprints = read_json_file(blueprints_path)
@@ -109,6 +86,21 @@ def app_with_config(config):
                 print "Error importing package {0}".format(key)
                 continue
             app.register_blueprint(getattr(blueprint, module))
+
+    # add lookup URL's
+
+    permalinks_by_type = {}
+    lookups_json_path = os.path.join(app.root_dir, '_settings/lookups.json')
+    if os.path.exists(lookups_json_path):
+        lookup_configs = read_json_file(lookups_json_path)
+        for name, configuration in lookup_configs.items():
+            app.add_url_rule(configuration['url'], name, functools.partial(handle_request, name, configuration))
+
+            if u'type' in configuration and configuration.get("permalink") == True:
+                content_type = configuration[u'type']
+                permalinks_by_type[content_type] = name
+
+    app.permalinks_by_type = permalinks_by_type
 
     @app.context_processor
     def add_queryfinder():
@@ -131,31 +123,16 @@ def app_with_config(config):
     def markdown_filter(raw_text):
         return markdown.markdown(raw_text)
 
-    def serve_error_page(error_code):
-        request = flask.request
-        # TODO: this seems silly 
-        # We shouldn't even need to send the request object,
-        # and the second argument should usually be request.path anyways
-        search_path = build_search_path_for_request(request, request.path, append=['_layouts','_includes'], include_start_directory=True)
-        template_path = find_in_search_path('%s.html' % error_code, search_path)
-
-        if template_path:
-            with codecs.open(template_path, encoding="utf-8") as template_source:
-                return flask.render_template_string(template_source.read()), error_code
-        else:
-            return "Please provide a %s.html!" % error_code
 
     @app.errorhandler(404)
-    def page_not_found(e):
-        return serve_error_page(404)
-        
+    def no_lookup(e):
+        return handle_request(None, None)
 
     @app.errorhandler(500)
     def general_error(e):
         return serve_error_page(500)
 
     add_query_utilities(app)
-    add_lookups_to_sheer(app)
     add_apis_to_sheer(app)
     add_feeds_to_sheer(app)
     add_filter_utilities(app)

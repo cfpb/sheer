@@ -87,8 +87,7 @@ class QueryHit(object):
         rule = app.permalinks_by_type.get(self.type)
         if rule:
             build_with=dict(id = self.hit_dict['_id'])
-            _ , url = rule.build(build_with)
-            return url
+            return flask.url_for(rule,**build_with)
 
     def __getattr__(self, attrname):
         value = field_or_source_value(attrname, self.hit_dict)
