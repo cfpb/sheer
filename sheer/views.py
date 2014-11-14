@@ -5,6 +5,8 @@ import flask
 from flask import request
 from werkzeug.exceptions import HTTPException, NotFound
 
+from elasticsearch.exceptions import NotFoundError
+
 from .utility import build_search_path, build_search_path_for_request, find_in_search_path
 from .query import QueryHit
 
@@ -19,11 +21,11 @@ def do_lookup(name, doc_type, **search_params):
 
     try: 
         document = es.get(index=es_index, doc_type=doc_type, id=id)
+        hit = QueryHit(document)
+        return {lookup_name: hit}
     except NotFoundError:
-        document = None
+        return None
 
-    hit = QueryHit(document)
-    return {lookup_name: hit}
 
 def handle_request(lookup_name=None, lookup_config=None, **kwargs):
     lookup_doc = None
@@ -58,7 +60,7 @@ def handle_request(lookup_name=None, lookup_config=None, **kwargs):
     try:
 
         template_path = next(t for t in template_candidates if os.path.exists(t))
-        #import pdb;pdb.set_trace()
+
         if os.path.exists(template_path):
             template_context = {}
             template_context.update(lookup_doc or {})
