@@ -85,4 +85,4 @@ def serve_error_page(error_code):
         with codecs.open(template_path, encoding="utf-8") as template_source:
             return flask.render_template_string(template_source.read()), error_code
     else:
-        return "Please provide a %s.html!" % error_code
+        return "Please provide a %s.html!" % error_code, error_code
