@@ -1,5 +1,6 @@
 import os.path
 import codecs
+import mimetypes
 
 import flask
 from flask import request
@@ -41,9 +42,12 @@ def handle_request(lookup_name=None, lookup_config=None, **kwargs):
     if os.path.isdir(translated_path) and not request_path.endswith('/'):
             return flask.redirect(request_path+'/')
 
-
     if not request_path.endswith('.html') and os.path.exists(translated_path):
-        flask.send_file(translated_path)
+        mime, encoding = mimetypes.guess_type(complete_path)
+        if mime:
+            return flask.send_file(translated_path), 200, {'Content-Type':mime}
+        else:
+            return flask.send_file(translated_path), 200, {'Content-Type':'application/unknown'}
 
     if lookup_name:
         doc_type = lookup_config['type']
