@@ -10,6 +10,7 @@ import flask
 import elasticsearch
 
 from jinja2.loaders import FileSystemLoader
+from werkzeug.routing import RequestRedirect
 from .apis import add_apis_to_sheer
 from .templates import date_formatter
 from .views import handle_request, serve_error_page
@@ -47,6 +48,20 @@ class Sheer(flask.Flask):
 
         print "\a"
         return FileSystemLoader(search_path)
+
+    def dispatch_request(self):
+        try:
+            flask_response = super(Sheer, self).dispatch_request()
+            return flask_response
+
+        except RequestRedirect:
+           
+            root_dir = flask.current_app.root_dir 
+            request_path = flask.request.path
+            filesystem_path = flask.safe_join(root_dir,request_path[1:])
+            if os.path.exists(filesystem_path) and not os.path.isdir(filesystem_path):
+                return handle_request()
+            raise
 
 
 def should_ignore_this_path(pathname):
@@ -86,6 +101,7 @@ def app_with_config(config):
                 print "Error importing package {0}".format(key)
                 continue
             app.register_blueprint(getattr(blueprint, module))
+
 
     # add lookup URL's
 
