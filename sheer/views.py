@@ -39,10 +39,10 @@ def handle_request(lookup_name=None, lookup_config=None, **kwargs):
     translated_path = os.path.join(root_dir, request_path[1:])
 
     if os.path.isdir(translated_path) and not request_path.endswith('/'):
-            return flask.redirect(request_path + '/')
+            return flask.redirect(request_path[1:] + '/')
 
     if not request_path.endswith('.html') and os.path.exists(translated_path):
-        mime, encoding = mimetypes.guess_type(complete_path)
+        mime, encoding = mimetypes.guess_type(translated_path)
         if mime:
             return flask.send_file(translated_path), 200, {'Content-Type': mime}
         else:
