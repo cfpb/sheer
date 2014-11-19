@@ -19,21 +19,23 @@ from sheer.filters import filter_dsl_from_multidict
 
 
 ALLOWED_SEARCH_PARAMS = ('doc_type',
-        'analyze_wildcard', 'analyzer', 'default_operator', 'df',
-        'explain', 'fields', 'indices_boost', 'lenient',
-        'allow_no_indices', 'expand_wildcards', 'ignore_unavailable',
-        'lowercase_expanded_terms', 'from_', 'preference', 'q', 'routing',
-        'scroll', 'search_type', 'size', 'sort', 'source', 'stats',
-        'suggest_field', 'suggest_mode', 'suggest_size', 'suggest_text', 'timeout',
-        'version')
+                         'analyze_wildcard', 'analyzer', 'default_operator', 'df',
+                         'explain', 'fields', 'indices_boost', 'lenient',
+                         'allow_no_indices', 'expand_wildcards', 'ignore_unavailable',
+                         'lowercase_expanded_terms', 'from_', 'preference', 'q', 'routing',
+                         'scroll', 'search_type', 'size', 'sort', 'source', 'stats',
+                         'suggest_field', 'suggest_mode', 'suggest_size', 'suggest_text', 'timeout',
+                         'version')
+
 
 def mapping_for_type(typename, es=None, es_index=None):
     if not es:
         es = flask.current_app.es
     if not es_index:
-        es_index =flask.current_app.es_index
+        es_index = flask.current_app.es_index
 
-    return es.indices.get_mapping(index=es_index, doc_type= typename) 
+    return es.indices.get_mapping(index=es_index, doc_type=typename)
+
 
 def field_or_source_value(fieldname, hit_dict):
     if 'fields' in hit_dict and fieldname in hit_dict['fields']:
@@ -45,23 +47,24 @@ def field_or_source_value(fieldname, hit_dict):
 
 def datatype_for_fieldname_in_mapping(fieldname, hit_type, mapping_dict):
     es = flask.current_app.es
-    es_index =flask.current_app.es_index
+    es_index = flask.current_app.es_index
 
     try:
         return mapping_dict[es_index]["mappings"][hit_type]["properties"][fieldname]["type"]
     except KeyError:
         return None
 
+
 def coerced_value(value, datatype):
     if datatype == None or value == None:
         return value
 
-    TYPE_MAP={'string': unicode,
-              'date': dateutil.parser.parse,
-              'dict': dict,
-              'float':float,
-              'long':float,
-              'boolean': bool}
+    TYPE_MAP = {'string': unicode,
+                'date': dateutil.parser.parse,
+                'dict': dict,
+                'float': float,
+                'long': float,
+                'boolean': bool}
 
     coercer = TYPE_MAP[datatype]
 
@@ -73,43 +76,46 @@ def coerced_value(value, datatype):
     else:
         return coercer(value)
 
-        
 
 class QueryHit(object):
+
     def __init__(self, hit_dict, es=None, es_index=None):
         self.hit_dict = hit_dict
         self.type = hit_dict['_type']
-        self.mapping = mapping_for_type(self.type, es=es, es_index=es_index )
+        self.mapping = mapping_for_type(self.type, es=es, es_index=es_index)
 
     @property
     def permalink(self):
         app = flask.current_app
         rule = app.permalinks_by_type.get(self.type)
         if rule:
-            build_with=dict(id = self.hit_dict['_id'])
-            return flask.url_for(rule,**build_with)
+            build_with = dict(id=self.hit_dict['_id'])
+            return flask.url_for(rule, **build_with)
 
     def __getattr__(self, attrname):
         value = field_or_source_value(attrname, self.hit_dict)
-        datatype = datatype_for_fieldname_in_mapping(attrname, self.type, self.mapping)
+        datatype = datatype_for_fieldname_in_mapping(
+            attrname, self.type, self.mapping)
         return coerced_value(value, datatype)
 
     def json_compatible(self):
         hit_dict = self.hit_dict
-        fields =  hit_dict.get('fields') or hit_dict.get('_source', {}).keys()
+        fields = hit_dict.get('fields') or hit_dict.get('_source', {}).keys()
         return dict((field, getattr(self, field)) for field in fields)
+
 
 class QueryResults(object):
 
-    def __init__(self, result_dict, pagenum = 1):
+    def __init__(self, result_dict, pagenum=1):
         self.result_dict = result_dict
         self.total = int(result_dict['hits']['total'])
         if 'query' in result_dict:
             self.size = int(result_dict['query'].get('size', '10'))
             self.from_ = int(result_dict['query'].get('from', 1))
-            self.pages = self.total / self.size + int(self.total%self.size > 0)
+            self.pages = self.total / self.size + \
+                int(self.total % self.size > 0)
         else:
-            self.size, self.from_, self.pages = 10,1,1    
+            self.size, self.from_, self.pages = 10, 1, 1
 
         self.current_page = pagenum
 
@@ -122,7 +128,6 @@ class QueryResults(object):
         if "facets" in self.result_dict and fieldname in self.result_dict["facets"]:
             return self.result_dict['facets'][fieldname]["terms"]
 
-
     def json_compatible(self):
         response_data = {}
         response_data['total'] = self.result_dict['hits']['total']
@@ -134,7 +139,8 @@ class QueryResults(object):
 
         if self.pages:
             response_data['pages'] = self.pages
-        response_data['results'] = [hit.json_compatible() for hit in self.__iter__()]
+        response_data['results'] = [
+            hit.json_compatible() for hit in self.__iter__()]
         return response_data
 
     def url_for_page(self, pagenum):
@@ -144,10 +150,10 @@ class QueryResults(object):
             args_dict['page'] = pagenum
         elif 'page' in args_dict:
             del args_dict['page']
-            
+
         encoded = url_encode(args_dict)
         if encoded:
-            url = "".join([flask.request.path, "?",url_encode(args_dict)])
+            url = "".join([flask.request.path, "?", url_encode(args_dict)])
             return url
         else:
             return flask.request.path
@@ -170,7 +176,7 @@ class Query(object):
         query_dict = query_file['query']
         query_dict.update(kwargs)
         pagenum = 1
-        
+
         request = flask.request
         url_filters = filter_dsl_from_multidict(request.args)
         args_flat = request.args.to_dict(flat=True)
@@ -179,37 +185,42 @@ class Query(object):
         if term_facets:
             facets_dsl = {}
             if type(term_facets) is str:
-                term_facets = [term_facets] # so we can treat it as a list
+                term_facets = [term_facets]  # so we can treat it as a list
             for fieldname in term_facets:
-                facets_dsl[fieldname]={"terms":{"field":fieldname, "size":10000}}
+                facets_dsl[fieldname] = {
+                    "terms": {"field": fieldname, "size": 10000}}
             query_body["facets"] = facets_dsl
         else:
             if 'page' in args_flat:
-                args_flat['from_'] = int(query_dict.get('size', '10')) * (int(args_flat['page'])-1)
+                args_flat['from_'] = int(
+                    query_dict.get('size', '10')) * (int(args_flat['page']) - 1)
                 pagenum = int(args_flat['page'])
 
-            args_flat_filtered = dict([(k,v) for k,v in args_flat.items() if v])
+            args_flat_filtered = dict(
+                [(k, v) for k, v in args_flat.items() if v])
             query_dict.update(args_flat_filtered)
-            query_body['query'] = {'filtered':{'filter': {}}}
+            query_body['query'] = {'filtered': {'filter': {}}}
             if url_filters:
-                query_body['query']['filtered']['filter']['and'] = [f for f in url_filters]
+                query_body['query']['filtered']['filter'][
+                    'and'] = [f for f in url_filters]
 
             if 'filters' in query_file:
                 if 'and' not in query_body['query']['filtered']['filter']:
                     query_body['query']['filtered']['filter']['and'] = []
                 for json_filter in query_file['filters']:
-                    query_body['query']['filtered']['filter']['and'].append(json_filter)
-        final_query_dict = dict((k, v) for (k, v) in query_dict.items() if k in ALLOWED_SEARCH_PARAMS)
+                    query_body['query']['filtered'][
+                        'filter']['and'].append(json_filter)
+        final_query_dict = dict((k, v)
+                                for (k, v) in query_dict.items() if k in ALLOWED_SEARCH_PARAMS)
         final_query_dict['index'] = self.es_index
         final_query_dict['body'] = query_body
         response = self.es.search(**final_query_dict)
-        response['query']= query_dict
-        return QueryResults(response,pagenum )
+        response['query'] = query_dict
+        return QueryResults(response, pagenum)
 
     def possible_values_for(self, field, **kwargs):
         results = self.search_with_url_arguments(term_facets=[field], **kwargs)
         return results.facets(field)
-        
 
     @property
     def results(self):
@@ -219,9 +230,7 @@ class Query(object):
             self.search()
             return self.__results
 
-
-
-    #TODO does this function still need to exist?
+    # TODO does this function still need to exist?
     def iterate_results(self):
         if 'hits' in self.results:
             for hit in self.results['hits']['hits']:
@@ -237,23 +246,25 @@ class QueryFinder(object):
         app = flask.current_app
         self.es = app.es
         self.es_index = app.es_index
-        self.queries_dir = os.path.join(app.root_dir,'_queries')
+        self.queries_dir = os.path.join(app.root_dir, '_queries')
 
     def __getattr__(self, name):
         query_filename = name + ".json"
-        query_file_path = os.path.join(self.queries_dir,query_filename)
+        query_file_path = os.path.join(self.queries_dir, query_filename)
 
         if os.path.exists(query_file_path):
             query = Query(query_file_path, self.es_index)
             return query
 
+
 class QueryJsonEncoder(json.JSONEncoder):
     query_classes = [QueryResults, QueryHit]
+
     def default(self, obj):
         if type(obj) in (datetime.datetime, datetime.date):
             return obj.isoformat()
         if type(obj) in self.query_classes:
-            return obj.json_compatible() 
+            return obj.json_compatible()
 
         return json.JSONEncoder.default(self, obj)
 
@@ -263,7 +274,8 @@ def add_query_utilities(app):
         es = flask.current_app.es
         es_index = app.es_index
         doctype, docid = hit.type, hit._id
-        raw_results = es.mlt(index=es_index, doc_type=doctype, id=docid, **kwargs)
+        raw_results = es.mlt(
+            index=es_index, doc_type=doctype, id=docid, **kwargs)
         return QueryResults(raw_results)
 
     def get_document(doctype, docid):

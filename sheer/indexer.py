@@ -2,7 +2,7 @@ import os
 import sys
 import codecs
 
-if sys.version_info[0:2] == (2,6):
+if sys.version_info[0:2] == (2, 6):
     # Python 2.6
     # the json included in 2.6 doesn't support object_pairs_hook
     from ordereddict import OrderedDict
@@ -34,6 +34,7 @@ def read_json_file(path):
 
 
 class ContentProcessor(object):
+
     def __init__(self, name, **kwargs):
         self.name = name
         self.processor_name = kwargs['processor']
@@ -89,18 +90,18 @@ def index_location(args, config):
 
         processors += configured_processors
 
-    glob_pattern = "".join([os.path.normpath(path),"/_*/"])
+    glob_pattern = "".join([os.path.normpath(path), "/_*/"])
     underscored = glob.glob(glob_pattern)
-    ignore_dirs = [os.path.join(path,d) for d in DO_NOT_INDEX]
+    ignore_dirs = [os.path.join(path, d) for d in DO_NOT_INDEX]
     filesystem_candidates = [u for u in underscored if u not in ignore_dirs]
- 
+
     for f in filesystem_candidates:
         # TODO: don't create processors for directories that
         # have a configured processor
-        processor_name_starts = f[0:-1].rfind('/')+2
+        processor_name_starts = f[0:-1].rfind('/') + 2
         processor_name = f[processor_name_starts:-1]
         processor_args = dict(directory=f,
-                              site_root = path,
+                              site_root=path,
                               processor="sheer.processors.filesystem")
         processors.append(ContentProcessor(processor_name, **processor_args))
     # Load default mapping (or not)
@@ -119,13 +120,13 @@ def index_location(args, config):
                                doc_type=processor.name,
                                body={processor.name: processor.mapping(default_mapping)})
 
-        i=-1
+        i = -1
         for i, document in enumerate(processor.documents()):
             es.create(index=index_name,
                       doc_type=processor.name,
                       id=document['_id'],
                       body=document)
-            sys.stdout.write("indexed %s %s \r" % (i+1, processor.name))
+            sys.stdout.write("indexed %s %s \r" % (i + 1, processor.name))
             sys.stdout.flush()
 
-        sys.stdout.write("indexed %s %s \n" % (i+1, processor.name))
+        sys.stdout.write("indexed %s %s \n" % (i + 1, processor.name))
