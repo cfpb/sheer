@@ -59,7 +59,7 @@ class Sheer(flask.Flask):
             root_dir = flask.current_app.root_dir 
             request_path = flask.request.path
             filesystem_path = flask.safe_join(root_dir,request_path[1:])
-            if os.path.exists(filesystem_path) and not os.path.isdir(filesystem_path):
+            if os.path.isfile(filesystem_path):
                 return handle_request()
             raise
 
