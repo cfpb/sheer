@@ -6,7 +6,7 @@ import os.path
 
 FRONTMATTER = re.compile(r'^\s*---(.*)---\s*$', flags=re.MULTILINE | re.S)
 
-#TODO this will get moved to the filesystem processor module
+# TODO this will get moved to the filesystem processor module
 
 
 def extract_frontmatter(data):
@@ -33,7 +33,7 @@ def annotations_from_filename(name):
             'date': datetime.datetime.strptime(date_string, date_pattern),
             '_id': remainder}
     except ValueError:
-        values = {'_id':name_no_ext}
+        values = {'_id': name_no_ext}
     return values
 
 

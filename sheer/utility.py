@@ -22,12 +22,12 @@ def path_ancestors(path):
     ancestors = []
 
     while stop_search_at_char > 0:
-        next_ancestor_end= path.rfind('/',0, stop_search_at_char)
-        ancestors.append(path[0:next_ancestor_end+1])
+        next_ancestor_end = path.rfind('/', 0, stop_search_at_char)
+        ancestors.append(path[0:next_ancestor_end + 1])
         stop_search_at_char = next_ancestor_end
 
     return ancestors
-        
+
 
 def add_site_libs(path):
     libs_dir = os.path.join(path, '_lib')
@@ -46,7 +46,6 @@ def build_search_path(root_dir, seeking_path, append=None, include_start_directo
     else:
         append_paths = []
 
-
     naked_paths = [os.path.join(root_dir, p) for p in rel_search_path]
 
     search_path = []
@@ -56,7 +55,7 @@ def build_search_path(root_dir, seeking_path, append=None, include_start_directo
             search_path.append(path)
 
         for extra_path in append_paths:
-            extended_path = os.path.join(path,extra_path)
+            extended_path = os.path.join(path, extra_path)
             search_path.append(extended_path)
 
     return search_path
@@ -68,7 +67,7 @@ def build_search_path_for_request(request,
                                   include_start_directory=False):
     root_dir = flask.current_app.root_dir
 
-    return build_search_path(root_dir, seeking_path, append=append,include_start_directory=include_start_directory)
+    return build_search_path(root_dir, seeking_path, append=append, include_start_directory=include_start_directory)
 
 
 def find_in_search_path(filename, paths):
@@ -89,6 +88,7 @@ def parse_es_host_port_pair(pair):
         port = 9200
 
     return dict(host=host, port=port)
+
 
 def parse_es_hosts(packed_hosts):
     pairs = []

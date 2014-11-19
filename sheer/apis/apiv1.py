@@ -10,6 +10,7 @@ from sheer.query import QueryFinder, QueryJsonEncoder
 def default_query_finder():
     return QueryFinder()
 
+
 def custom_json_output(data, code, headers=None):
     dumped = json.dumps(data, cls=QueryJsonEncoder)
     resp = flask.make_response(dumped, code)
@@ -19,9 +20,9 @@ def custom_json_output(data, code, headers=None):
 
 def add_to_sheer(app):
     api = restful.Api(app)
-    
-    
+
     class QueryResource(restful.Resource):
+
         def get(self, name):
             query_finder = default_query_finder()
             query = getattr(query_finder, name) or flask.abort(404)

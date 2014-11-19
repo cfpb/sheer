@@ -13,16 +13,19 @@ ALLOWED_ENTRY_PARAMS = ('entry_url', 'entry_title', 'entry_content',
                         'entry_author', 'entry_updated', 'entry_content_type',
                         'entry_summary', 'entry_published', 'entry_rights')
 
+
 def make_external(url):
     return urljoin(request.url_root, url)
 
+
 def get_feed_settings(name):
     app = flask.current_app
-    queries_dir = os.path.join(app.root_dir,'_queries')
+    queries_dir = os.path.join(app.root_dir, '_queries')
     query_path = os.path.join(queries_dir, '{0}.json'.format(name))
     if os.path.exists(query_path):
         query_file = read_json_file(query_path)
         return query_file.get('feed')
+
 
 class Feed(object):
 
@@ -35,6 +38,7 @@ class Feed(object):
                 setting_trimmed = setting.replace('feed_', '')
                 setattr(self, setting_trimmed, settings[setting])
 
+
 class Entry(object):
 
     # Make sure only allowed entry params are passed into the feed
@@ -42,13 +46,14 @@ class Entry(object):
         for setting in settings:
             attribute = settings[setting].replace('$$', '')
             if setting.startswith('entry_') and \
-            setting in ALLOWED_ENTRY_PARAMS and \
-            hasattr(item, attribute):
+                setting in ALLOWED_ENTRY_PARAMS and \
+                    hasattr(item, attribute):
                 setting_trimmed = setting.replace('entry_', '')
                 setattr(self, setting_trimmed, getattr(item, attribute))
 
         if self.url:
             self.url = make_external(self.url)
+
 
 def add_feeds_to_sheer(app):
 
@@ -63,5 +68,5 @@ def add_feeds_to_sheer(app):
 
         for item in items:
             entry = Entry(item, settings)
-            atom_feed.add(**entry.__dict__)       
+            atom_feed.add(**entry.__dict__)
         return atom_feed.get_response()

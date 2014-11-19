@@ -2,10 +2,12 @@ from werkzeug.datastructures import MultiDict
 
 from sheer import filters
 
+
 class testArgParsing(object):
+
     def setup(self):
-        self.args = MultiDict([('filter_category','cats'),
-                               ('filter_category','dogs'),
+        self.args = MultiDict([('filter_category', 'cats'),
+                               ('filter_category', 'dogs'),
                                ('filter_range_date_lte', '2014-6-1'),
                                ('filter_range_comment_count_gt', '100')])
 
@@ -27,11 +29,14 @@ class testArgParsing(object):
         assert('100' == filter_dsl[1]['range']['comment_count']['gt'])
 
     def test_filters_for_field(self):
-        selected = filters.selected_filters_from_multidict(self.args, 'category')
+        selected = filters.selected_filters_from_multidict(
+            self.args, 'category')
         assert (('cats') in selected)
         assert (('dogs') in selected)
 
+
 class TestDateValidation(object):
+
     def test_date_validation_incorrect_range(self):
         args = MultiDict([('filter_range_date_gte', '2014-6'),
                           ('filter_range_date_lte', '2013-6')])
