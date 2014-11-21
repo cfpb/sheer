@@ -24,7 +24,12 @@ from elasticsearch import Elasticsearch
 from sheer.utility import add_site_libs
 from sheer.processors.helpers import IndexHelper
 
-DO_NOT_INDEX = ['_settings/', '_layouts/', '_queries/', '_defaults/', '_lib/']
+DO_NOT_INDEX = ['_settings/', 
+                '_layouts/', 
+                '_queries/', 
+                '_defaults/', 
+                '_lib/',
+                '_tests/']
 
 
 def read_json_file(path):
