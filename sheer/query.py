@@ -84,6 +84,12 @@ class QueryHit(object):
         self.type = hit_dict['_type']
         self.mapping = mapping_for_type(self.type, es=es, es_index=es_index)
 
+    def __str__(self):
+        return str(self.hit_dict.get('_source'))
+
+    def __repr__(self):
+        return self.__str__()
+
     @property
     def permalink(self):
         app = flask.current_app
