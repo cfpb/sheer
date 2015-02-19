@@ -180,11 +180,29 @@ class Query(object):
     def search_with_url_arguments(self, term_facets=None, **kwargs):
         query_file = json.loads(file(self.filename).read())
         query_dict = query_file['query']
-        query_dict.update(kwargs)
+
+        '''
+        These dict constructors split the kwargs from the template into filter
+        arguments and arguments that can be placed directly into the query body.
+        The dict constructor syntax supports python 2.6, 2.7, and 3.x
+        If python 2.7, use dict comprehension and iteritems()
+        With python 3, use dict comprehension and items() (items() replaces 
+        iteritems and is just as fast)
+        '''
+        filter_args = dict((key, value) for (key, value) in kwargs.items() 
+            if key.startswith('filter_'))
+        non_filter_args = dict((key, value) for (key, value) in kwargs.items() 
+            if not key.startswith('filter_'))
+        query_dict.update(non_filter_args)
         pagenum = 1
 
         request = flask.request
-        url_filters = filter_dsl_from_multidict(request.args)
+
+        # Add in filters from the template.
+        new_multidict = request.args.copy()
+        for key, value in filter_args.items():
+            new_multidict.add(key, value)
+        url_filters = filter_dsl_from_multidict(new_multidict)
         args_flat = request.args.to_dict(flat=True)
         query_body = {}
 
