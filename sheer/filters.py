@@ -5,6 +5,12 @@ import datetime
 from dateutil.parser import parse
 
 def generate_term_filters(multidict, filter_keys):
+    '''
+    This generates the ElasticSearch filter DSL for filters that check whether
+    a field matches a certain string.  Groupings of the same exact filter, such
+    as filter_fieldname, are combined into an OR filter, while the major
+    groupings of separate filters are all combined into an AND filter.
+    '''
     term_main = {"and": []}
     for key in filter_keys:
         field = key.replace('filter_', '')
@@ -18,6 +24,10 @@ def generate_term_filters(multidict, filter_keys):
     return term_main
 
 def generate_range_filters(multidict, filter_keys):
+    '''
+    This generates the ElasticSearch filter DSL for filters that check whether
+    a field is within a certain range
+    '''
     range_clause = {"range": {}}
     for key in filter_keys:
         full_field = key.replace('filter_range_', '')
