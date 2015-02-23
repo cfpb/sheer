@@ -3,22 +3,25 @@ from werkzeug.datastructures import MultiDict
 from sheer import filters
 
 
-class testArgParsing(object):
+class TestArgParsing(object):
 
     def setup(self):
         self.args = MultiDict([('filter_category', 'cats'),
                                ('filter_category', 'dogs'),
+                               ('filter_planet', 'earth'),
                                ('filter_range_date_lte', '2014-6-1'),
                                ('filter_range_comment_count_gt', '100')])
 
     def test_args_to_filter_dsl(self):
         filter_dsl = filters.filter_dsl_from_multidict(self.args)
-        assert('bool' in filter_dsl[0])
-        assert('must' in filter_dsl[0]['bool'])
-        value1 = filter_dsl[0]['bool']['should'][0]['term']['category']
-        value2 = filter_dsl[0]['bool']['should'][1]['term']['category']
+        print filter_dsl
+        assert('and' in filter_dsl[0])
+        assert('or' in filter_dsl[0]['and'][0])
+        value1 = filter_dsl[0]['and'][0]['or'][0]['term']['category']
+        value2 = filter_dsl[0]['and'][0]['or'][1]['term']['category']
         assert('cats' in [value1, value2])
         assert('dogs' in [value1, value2])
+        assert('earth' in filter_dsl[0]['and'][1]['or'][0]['term']['planet'])
 
     def test_range_args(self):
         filter_dsl = filters.filter_dsl_from_multidict(self.args)
