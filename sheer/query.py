@@ -134,6 +134,11 @@ class QueryResults(object):
         if "facets" in self.result_dict and fieldname in self.result_dict["facets"]:
             return self.result_dict['facets'][fieldname]["terms"]
 
+    def aggregations(self, fieldname):
+        if "aggregations" in self.result_dict and \
+            fieldname in self.result_dict['aggregations']:
+            return self.result_dict['aggregations'][fieldname]['buckets']
+
     def json_compatible(self):
         response_data = {}
         response_data['total'] = self.result_dict['hits']['total']
@@ -177,7 +182,7 @@ class Query(object):
         self.__results = None
         self.json_safe = json_safe
 
-    def search_with_url_arguments(self, term_facets=None, **kwargs):
+    def search_with_url_arguments(self, aggregations=None, **kwargs):
         query_file = json.loads(file(self.filename).read())
         query_dict = query_file['query']
 
@@ -206,14 +211,14 @@ class Query(object):
         args_flat = request.args.to_dict(flat=True)
         query_body = {}
 
-        if term_facets:
-            facets_dsl = {}
-            if type(term_facets) is str:
-                term_facets = [term_facets]  # so we can treat it as a list
-            for fieldname in term_facets:
-                facets_dsl[fieldname] = {
-                    "terms": {"field": fieldname, "size": 10000}}
-            query_body["facets"] = facets_dsl
+        if aggregations:
+            aggs_dsl = {}
+            if type(aggregations) is str:
+                aggregations = [aggregations] # so we can treat it as a list
+            for fieldname in aggregations:
+                aggs_dsl[fieldname] = {'terms': 
+                    {'field': fieldname, 'size': 10000}}
+            query_body['aggs'] = aggs_dsl
         else:
             if 'page' in args_flat:
                 args_flat['from_'] = int(
@@ -243,8 +248,8 @@ class Query(object):
         return QueryResults(response, pagenum)
 
     def possible_values_for(self, field, **kwargs):
-        results = self.search_with_url_arguments(term_facets=[field], **kwargs)
-        return results.facets(field)
+        results = self.search_with_url_arguments(aggregations=[field], **kwargs)
+        return results.aggregations(field)
 
     @property
     def results(self):
@@ -253,15 +258,6 @@ class Query(object):
         else:
             self.search()
             return self.__results
-
-    # TODO does this function still need to exist?
-    def iterate_results(self):
-        if 'hits' in self.results:
-            for hit in self.results['hits']['hits']:
-                self.convert_datatypes(hit)
-                hit.update(hit['fields'])
-                del hit['fields']
-                yield hit
 
 
 class QueryFinder(object):
