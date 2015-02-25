@@ -130,10 +130,6 @@ class QueryResults(object):
             for hit in self.result_dict['hits']['hits']:
                 yield QueryHit(hit)
 
-    def facets(self, fieldname):
-        if "facets" in self.result_dict and fieldname in self.result_dict["facets"]:
-            return self.result_dict['facets'][fieldname]["terms"]
-
     def aggregations(self, fieldname):
         if "aggregations" in self.result_dict and \
             fieldname in self.result_dict['aggregations']:
