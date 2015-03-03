@@ -157,7 +157,7 @@ class TestIndexing(object):
         # Here we want to test:
         #   * Index exists -> should be left alone
         #   * Mappings exist for processor -> should be deleted and recreated
-        #   * Documents exist for processor -> should be updated
+        #   * Documents don't exist for processor -> should be created
 
         mock_es = mock_Elasticsearch.return_value
         mock_es.indices.exists.return_value = True
@@ -170,12 +170,11 @@ class TestIndexing(object):
         test_args = AttrDict(processors=['posts'], reindex=False)
         index_location(test_args, self.config)
 
-        mock_es.update.assert_called_with(
+        mock_es.create.assert_called_with(
             index=self.config['index'],
             doc_type='posts',
             id=self.mock_document['_id'],
-            body={'doc':self.mock_document})
-
+            body=self.mock_document)
 
     @mock.patch('sheer.indexer.Elasticsearch')
     @mock.patch('sheer.indexer.ContentProcessor')
