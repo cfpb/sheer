@@ -19,8 +19,6 @@ import importlib
 
 from csv import DictReader
 
-# For some reason mock has difficulty mocking Elasticsearch if it's imported
-# from the elasticsearch module.
 from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import TransportError
 
