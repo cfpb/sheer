@@ -19,15 +19,18 @@ import importlib
 
 from csv import DictReader
 
+# For some reason mock has difficulty mocking Elasticsearch if it's imported
+# from the elasticsearch module.
 from elasticsearch import Elasticsearch
+from elasticsearch.exceptions import TransportError
 
 from sheer.utility import add_site_libs
 from sheer.processors.helpers import IndexHelper
 
-DO_NOT_INDEX = ['_settings/', 
-                '_layouts/', 
-                '_queries/', 
-                '_defaults/', 
+DO_NOT_INDEX = ['_settings/',
+                '_layouts/',
+                '_queries/',
+                '_defaults/',
                 '_lib/',
                 '_tests/']
 
@@ -35,7 +38,7 @@ DO_NOT_INDEX = ['_settings/',
 def read_json_file(path):
         if os.path.exists(path):
             with codecs.open(path, 'r', 'utf-8') as json_file:
-                    return json.loads(json_file.read(), object_pairs_hook=OrderedDict)
+                return json.loads(json_file.read(), object_pairs_hook=OrderedDict)
 
 
 class ContentProcessor(object):
@@ -78,12 +81,18 @@ def index_location(args, config):
     es = Elasticsearch(config["elasticsearch"])
     index_name = config["index"]
 
-    if es.indices.exists(index_name):
+    # If we're given args.reindex and NOT given a list of processors to reindex,
+    # we're expected to reindex everything. Delete the existing index.
+    if not args.processors and args.reindex and es.indices.exists(index_name):
+        print "reindexing %s" % index_name
         es.indices.delete(index_name)
-    if os.path.exists(settings_path):
-        es.indices.create(index=index_name, body=file(settings_path).read())
-    else:
-        es.indices.create(index=index_name)
+
+    # If the index doesn't exist, create it.
+    if not es.indices.exists(index_name):
+        if os.path.exists(settings_path):
+            es.indices.create(index=index_name, body=file(settings_path).read())
+        else:
+            es.indices.create(index=index_name)
 
     processors = []
     processor_settings = read_json_file(processors_path)
@@ -109,6 +118,7 @@ def index_location(args, config):
                               site_root=path,
                               processor="sheer.processors.filesystem")
         processors.append(ContentProcessor(processor_name, **processor_args))
+
     # Load default mapping (or not)
     if os.path.exists(default_mapping_path):
         try:
@@ -119,18 +129,50 @@ def index_location(args, config):
     else:
         default_mapping = {}
 
-    for processor in processors:
-        print "creating mapping for %s (%s)" % (processor.name, processor.processor_name)
-        es.indices.put_mapping(index=index_name,
-                               doc_type=processor.name,
-                               body={processor.name: processor.mapping(default_mapping)})
+    # If any specific content processors were selected, we run them. Otherwise
+    # we run all of them.
+    selected_processors = processors
+    if args.processors and len(args.processors) > 0:
+        selected_processors = [p for p in processors if p.name in args.processors]
+
+    for processor in selected_processors:
+        # If the mapping already exists, and we were called with the reindex
+        # flag, remove the mapping.
+        mapping = es.indices.get_mapping(index=index_name, doc_type=processor.name)
+        if mapping and args.reindex:
+            print "removing existing mapping for %s (%s)" % (processor.name, processor.processor_name)
+            es.indices.delete_mapping(index=index_name, doc_type=processor.name)
+            mapping = {}
+
+        # Then create the mapping if it does not exist
+        if not mapping:
+            print "creating mapping for %s (%s)" % (processor.name, processor.processor_name)
+            es.indices.put_mapping(index=index_name,
+                                doc_type=processor.name,
+                                body={processor.name: processor.mapping(default_mapping)})
 
         i = -1
         for i, document in enumerate(processor.documents()):
-            es.create(index=index_name,
-                      doc_type=processor.name,
-                      id=document['_id'],
-                      body=document)
+            # Create the document. If it already exists in Elasticsearch an
+            # exception will be raised.
+            try:
+                es.create(index=index_name,
+                        doc_type=processor.name,
+                        id=document['_id'],
+                        body=document)
+            except TransportError, e:
+                # Elasticsearch status code 409 is DocumentAlreadyExistsException
+                # Anything else and we want to bail here.
+                if e.status_code != 409:
+                    raise e
+
+                # If the document couldn't be created because it already exists,
+                # update it instead.
+                es.update(index=index_name,
+                        doc_type=processor.name,
+                        id=document['_id'],
+                        body={'doc': document})
+
             sys.stdout.write("indexed %s %s \r" % (i + 1, processor.name))
             sys.stdout.flush()
 

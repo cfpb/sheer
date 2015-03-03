@@ -25,13 +25,17 @@ if __name__ == '__main__':
 
     index_parser = subparsers.add_parser('index',
                                          help='load content into Elasticsearch')
-
+    index_parser.add_argument('--reindex', '-r', action="store_true",
+                              help="recreate the index and reindex all content")
+    index_parser.add_argument('--processors', '-p', nargs='*',
+                              help='content processors to index')
     index_parser.set_defaults(func=sheer.indexer.index_location)
+
     server_parser=subparsers.add_parser('serve', help= "serve content from elasticsearch, using configuration and templates at location")
     server_parser.set_defaults(func=sheer.server.serve_wsgi_app_with_cli_args)
-    server_parser.add_argument('--port', '-p', 
+    server_parser.add_argument('--port', '-p',
             default= '7000', help="port to run the web server on")
-    server_parser.add_argument('--addr', '-a', 
+    server_parser.add_argument('--addr', '-a',
             default= '0.0.0.0', help="address to run the web server on")
 
     build_parser=subparsers.add_parser('build', help='generate a static version of this site')
