@@ -14,8 +14,10 @@ class TestIndexing(object):
     """
 
     def setup(self):
-        # Sheer indexing loads three JSON files. These are mocked here for the
-        # purpose of testing.
+        # Sheer indexing tries to load three JSON files. For testing purposes,
+        # `settings.json` and `mappings.json` are not necessary, but we do need
+        # a content processor to test with. The contents of `processors.json` is
+        # mocked here.
         self.mock_processors = {'posts':
             {'url': 'http://test/api/get_posts/',
              'processor': 'post_processor',
