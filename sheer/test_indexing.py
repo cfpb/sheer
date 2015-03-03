@@ -11,9 +11,6 @@ class AttrDict(dict):
 class TestIndexing(object):
     """
     Test Sheer content indexing.
-
-    Sheer indexes content based on settings, mappings, and content
-    processors defined in
     """
 
     def setup(self):
