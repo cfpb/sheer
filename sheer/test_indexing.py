@@ -158,7 +158,7 @@ class TestIndexing(object):
         # Here we want to test:
         #   * Index exists -> should be left alone
         #   * Mappings exist for processor -> should be deleted and recreated
-        #   * Documents don't exist for processor -> should be updated
+        #   * Documents exist for processor -> should be updated
 
         mock_es = mock_Elasticsearch.return_value
         mock_es.indices.exists.return_value = True
@@ -177,4 +177,50 @@ class TestIndexing(object):
             id=self.mock_document['_id'],
             body={'doc':self.mock_document})
 
+
+    @mock.patch('sheer.indexer.Elasticsearch')
+    @mock.patch('sheer.indexer.ContentProcessor')
+    @mock.patch('sheer.indexer.read_json_file')
+    @mock.patch('os.path.exists')
+    def test_partial_reindexing(self, mock_exists, mock_read_json_file,
+                      mock_ContentProcessor, mock_Elasticsearch):
+        """
+        `sheer index --processors posts --reindex`
+
+        Test the re-creation of mappings associated with content processor
+        and the updating of its documents.
+        """
+        # Mock file existing/opening/reading
+        # os.path.exists is only called directly for settings.json and
+        # mappings.json, which are not necessary for our tests.
+        mock_exists.return_value = False
+        mock_read_json_file.side_effect = [self.mock_processors, {}]
+
+        # Wire-up our mock content processor
+        mock_ContentProcessor.return_value = self.mock_processor
+
+        # Here we want to test:
+        #   * Index exists and we're given processors -> should be left alone.
+        #   * Mappings exist for processor -> should be deleted and recreated
+        #   * Documents no longer exist for processor -> should be created
+        mock_es = mock_Elasticsearch.return_value
+        mock_es.indices.exists.side_effect = [True, False]
+        mock_es.indices.get_mapping.return_value = True
+
+        test_args = AttrDict(processors=['posts'], reindex=True)
+        index_location(test_args, self.config)
+
+        mock_es.indices.delete_mapping.assert_called_with(
+            index=self.config['index'],
+            doc_type='posts')
+        mock_es.indices.put_mapping.assert_called_with(
+            index=self.config['index'],
+            doc_type='posts',
+            body={'posts': {}})
+
+        mock_es.create.assert_called_with(
+            index=self.config['index'],
+            doc_type='posts',
+            id=self.mock_document['_id'],
+            body=self.mock_document)
 
