@@ -1,6 +1,7 @@
 import os.path
 import codecs
 import mimetypes
+import re
 
 import flask
 from flask import request
@@ -11,6 +12,7 @@ from elasticsearch.exceptions import NotFoundError
 from .utility import build_search_path, build_search_path_for_request, find_in_search_path
 from .query import QueryHit
 
+always_404_pattern = re.compile(r'/[._]')
 
 def do_lookup(name, doc_type, **search_params):
     es = flask.current_app.es
@@ -32,6 +34,9 @@ def handle_request(lookup_name=None, lookup_config=None, **kwargs):
     lookup_doc = None
     root_dir = flask.current_app.root_dir
     request_path = request.path
+
+    if always_404_pattern.search(request_path):
+        return serve_error_page(404)
 
     if request_path.endswith('/'):
             request_path += ('index.html')
