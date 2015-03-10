@@ -47,7 +47,6 @@ class Sheer(flask.Flask):
                                         append=['_layouts', '_includes'],
                                         include_start_directory=True)
 
-        print "\a"
         return FileSystemLoader(search_path)
 
     def dispatch_request(self):
