@@ -1,5 +1,8 @@
+# -*- coding: utf-8 -*-
 
+import sys
 import mock
+from StringIO import StringIO
 from .indexer import ContentProcessor, index_location
 from elasticsearch.exceptions import TransportError
 
@@ -216,6 +219,71 @@ class TestIndexing(object):
             doc_type='posts',
             body={'posts': {}})
 
+        mock_es.create.assert_called_with(
+            index=self.config['index'],
+            doc_type='posts',
+            id=self.mock_document['_id'],
+            body=self.mock_document)
+
+
+    @mock.patch('sheer.indexer.Elasticsearch')
+    @mock.patch('sheer.indexer.ContentProcessor')
+    @mock.patch('sheer.indexer.read_json_file')
+    @mock.patch('os.path.exists')
+    def test_indexing_failure(self, mock_exists, mock_read_json_file,
+                              mock_ContentProcessor, mock_Elasticsearch):
+        """
+        `sheer index`
+
+        Test the failure of indexing by Sheer, and make sure it fails
+        gracefully. This simulates the unavailability and timeout of the
+        upstream source of information.
+        """
+
+        # We want to capture stderr
+        sys.stderr = StringIO()
+
+        # Add another mock error processor to the mock_processor json
+        self.mock_processors['more_posts'] = {
+            'url': 'http://test/api/get_posts/',
+            'processor': 'post_processor',
+            'mappings': '_settings/posts_mappings.json'}
+
+        # Mock file existing/opening/reading
+        # os.path.exists is only called directly for settings.json and
+        # mappings.json, which are not necessary for our tests.
+        mock_exists.return_value = False
+        mock_read_json_file.side_effect = [self.mock_processors, {}]
+
+        # A context processor that will raise a ValueError.
+        mock_err_processor = mock.Mock(spec=ContentProcessor)
+        mock_err_processor.name = 'posts'
+        mock_err_processor.processor_name = 'posts_processor'
+        mock_err_processor.mapping.return_value = {}
+        mock_err_processor.documents.side_effect = ValueError("No JSON object could be decoded")
+
+        # Make sure ContentProcessor returns the err processor
+        mock_ContentProcessor.side_effect = [mock_err_processor, self.mock_processor]
+
+        # Here we assume:
+        #   * Index doesn't exist -> should be created
+        #   * Mappings don't exist for processor -> should be created
+        #   * Documents don't exist for processor -> should be created
+        #       * An exception is raised when trying to fetch documents from the
+        #         context processor.
+        mock_es = mock_Elasticsearch.return_value
+        mock_es.indices.exists.return_value = False
+        mock_es.indices.get_mapping.return_value = None
+
+        test_args = AttrDict(processors=[], reindex=False)
+        index_location(test_args, self.config)
+
+        # Ensure that we got the error message.
+        assert 'error reading documents' in sys.stderr.getvalue()
+
+        # Ensure that create was called just once, with the appropriate
+        # arguments from the non-erroring content processor.
+        assert mock_es.create.call_count == 1
         mock_es.create.assert_called_with(
             index=self.config['index'],
             doc_type='posts',

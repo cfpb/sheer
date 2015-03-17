@@ -149,8 +149,21 @@ def index_location(args, config):
                                 doc_type=processor.name,
                                 body={processor.name: processor.mapping(default_mapping)})
 
+        # Get the document iterator from the processor.
+        # This could raise a value error raised by json.loads() if there is a
+        # connection error, server error, or other error acquiring the data.
+        # This is seperate from the for loop so that we dont create/update some
+        # of the documents then error.
+        try:
+            document_iterator = enumerate(processor.documents())
+        except ValueError:
+            # If there's an error, log it, and then move on to the next content
+            # processor.
+            sys.stderr.write("error reading documents for %s" % processor.name)
+            continue
+
         i = -1
-        for i, document in enumerate(processor.documents()):
+        for i, document in document_iterator:
             # Create the document. If it already exists in Elasticsearch an
             # exception will be raised.
             try:
