@@ -46,17 +46,21 @@ Recommended for installing and running Sheer:
 Running tests requires:
 
 - [nose](https://nose.readthedocs.org/en/latest/)
+- [mock](http://www.voidspace.org.uk/python/mock/)
 
 ## Installation
 
 To install Sheer you will first need to install 
 [Elasticsearch](http://www.elasticsearch.org/). This can be acomplished 
-a number of ways. On Mac OS X it can be installed using 
-[homebrew](http://brew.sh/):
+a number of ways, many of which are detailed in 
+[in the Elasticsearch documentation](http://www.elastic.co/guide/en/elasticsearch/reference/current/setup.html). 
+On Mac OS X it can be installed using [homebrew](http://brew.sh/):
 
 ```
 $ brew install elasticsearch
 ```
+
+There are also [Elasticsearch apt and Yum repositories](http://www.elastic.co/guide/en/elasticsearch/reference/current/setup-repositories.html).
 
 To install Sheer itself, it is recommended to create a 
 [`virtualenv`](https://virtualenv.pypa.io/en/latest/) using 
