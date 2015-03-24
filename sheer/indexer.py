@@ -121,15 +121,14 @@ def index_processor(es, index_name, default_mapping, processor, reindex=False):
         # print an error message and raise the exception. It should be caught by
         # this function's caller.
         sys.stderr.write("error reading documents for %s" % processor.name)
-        raise
+    else:
+        i = -1
+        for i, document in document_iterator:
+            index_document(es, index_name, processor, document)
+            sys.stdout.write("indexed %s %s \r" % (i + 1, processor.name))
+            sys.stdout.flush()
 
-    i = -1
-    for i, document in document_iterator:
-        index_document(es, index_name, processor, document)
-        sys.stdout.write("indexed %s %s \r" % (i + 1, processor.name))
-        sys.stdout.flush()
-
-    sys.stdout.write("indexed %s %s \n" % (i + 1, processor.name))
+        sys.stdout.write("indexed %s %s \n" % (i + 1, processor.name))
 
 
 def index_location(args, config):
@@ -206,11 +205,5 @@ def index_location(args, config):
         selected_processors = [p for p in processors if p.name in args.processors]
 
     for processor in selected_processors:
-        # This could raise a value error if there's a problem reading the
-        # processor's source json. If that happens, continue on to the next
-        # content processor.
-        try:
-            index_processor(es, index_name, default_mapping, processor, reindex=args.reindex)
-        except ValueError:
-            continue
+        index_processor(es, index_name, default_mapping, processor, reindex=args.reindex)
 
