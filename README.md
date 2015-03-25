@@ -6,9 +6,9 @@ If you're not familiar with Elasticsearch, it is highly recommended that you rea
 
 * [Requirements](#requirements)
 * [Installation](#installation)
+* [General Usage](#general-usage)
 * [Testing](#testing)
 * [Quick Start](#quick-start)
-* [General Usage](#general-usage)
 * [Indexing](#indexing)
     * [Reindexing](#reindexing)
     * [Partial Indexing](#partial-indexing)
@@ -90,6 +90,30 @@ installed again.
 pip install -e sheer
 ```
 
+## General Usage
+
+The `sheer` command takes the following general arguments:
+
+* `-h`: Show help message and exit.
+* `--debug`: Print debugging output to the console.
+* `--location`: The directory you want to operate on. You can also set
+  the `SHEER_LOCATION` environment variable.
+* `--elasticsearch ELASTICSEARCH, -e ELASTICSEARCH`: Elasticsearch
+  host:port pairs. Seperate hosts with commas. Default is
+  `localhost:9200` You can also set the `SHEER_ELASTICSEARCH_HOSTS`
+  environment variable.
+* `--index INDEX, -i INDEX`: Elasticsearch index name. Default is
+  `content`. You can also set the `SHEER_ELASTICSEARCH_INDEX`
+  environment variable.
+
+The `sheer` command also takes one of two positional arguments:
+
+* `index`: Load content into Elasticsearch.
+* `serve`: Serve content from Elasticsearch using configuration and
+  templates at location.
+
+These are covered in more detail below.
+
 ## Testing
 
 To run the Sheer tests, you'll need the Python packages 
@@ -135,30 +159,6 @@ The site can also be served in "debug" mode:
 ```shell
 sheer serve --debug
 ```
-
-## General Usage
-
-The `sheer` command takes the following general arguments:
-
-* `-h`: Show help message and exit.
-* `--debug`: Print debugging output to the console.
-* `--location`: The directory you want to operate on. You can also set
-  the `SHEER_LOCATION` environment variable.
-* `--elasticsearch ELASTICSEARCH, -e ELASTICSEARCH`: Elasticsearch
-  host:port pairs. Seperate hosts with commas. Default is
-  `localhost:9200` You can also set the `SHEER_ELASTICSEARCH_HOSTS`
-  environment variable.
-* `--index INDEX, -i INDEX`: Elasticsearch index name. Default is
-  `content`. You can also set the `SHEER_ELASTICSEARCH_INDEX`
-  environment variable.
-
-The `sheer` command also takes one of two positional arguments:
-
-* `index`: Load content into Elasticsearch.
-* `serve`: Serve content from Elasticsearch using configuration and
-  templates at location.
-
-These are covered in more detail below.
 
 ## Indexing 
 
