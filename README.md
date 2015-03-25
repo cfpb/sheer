@@ -140,23 +140,23 @@ sheer serve --debug
 
 The `sheer` command takes the following general arguments:
 
-* `-h`: show help message and exit
-* `--debug`: print debugging output to the console
-* `--location`: the directory you want to operate on. You can also set
-  the `SHEER_LOCATION` environment variable
-* `--elasticsearch ELASTICSEARCH, -e ELASTICSEARCH`: elasticsearch
+* `-h`: Show help message and exit.
+* `--debug`: Print debugging output to the console.
+* `--location`: The directory you want to operate on. You can also set
+  the `SHEER_LOCATION` environment variable.
+* `--elasticsearch ELASTICSEARCH, -e ELASTICSEARCH`: Elasticsearch
   host:port pairs. Seperate hosts with commas. Default is
   `localhost:9200` You can also set the `SHEER_ELASTICSEARCH_HOSTS`
   environment variable.
-* `--index INDEX, -i INDEX`: elasticsearch index name. Default is
+* `--index INDEX, -i INDEX`: Elasticsearch index name. Default is
   `content`. You can also set the `SHEER_ELASTICSEARCH_INDEX`
   environment variable.
 
 The `sheer` command also takes one of two positional arguments:
 
-* `index`: load content into Elasticsearch
-* `serve`: Serve content from elasticsearch using configuration and
-  templates at location
+* `index`: Load content into Elasticsearch.
+* `serve`: Serve content from Elasticsearch using configuration and
+  templates at location.
 
 These are covered in more detail below.
 
@@ -170,9 +170,9 @@ Sheer indexing allows configurable loading of content into  [Elasticsearch](http
 
 `sheer index` takes the following arguments:
 
-* `--reindex, -r`: recreate the index and reindex all content
+* `--reindex, -r`: Recreate the index and reindex all content.
 * `--processors [PROCESSORS [PROCESSORS ...]], -p [PROCESSORS
-  [PROCESSORS ...]]`: content processors to index
+  [PROCESSORS ...]]`: Content processors to index.
 
 These are covered in more detail below.
 
@@ -343,8 +343,8 @@ Sheer can serve the content it indexes in Elasticsearch via command-line in the 
 
 `sheer serve` takes the following arguments:
 
-* `--port PORT, -p PORT`: port to run the web server on
-* `--addr ADDR, -a ADDR`: address to run the web server on
+* `--port PORT, -p PORT`: Port to run the web server on.
+* `--addr ADDR, -a ADDR`: Address to run the web server on.
 
 Sheer does not serve any paths beginning with an underscore. They are considered private.
 
