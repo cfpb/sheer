@@ -57,7 +57,7 @@ a number of ways, many of which are detailed in
 On Mac OS X it can be installed using [homebrew](http://brew.sh/):
 
 ```
-$ brew install elasticsearch
+brew install elasticsearch
 ```
 
 There are also [Elasticsearch apt and Yum repositories](http://www.elastic.co/guide/en/elasticsearch/reference/current/setup-repositories.html).
@@ -67,16 +67,16 @@ To install Sheer itself, it is recommended to create a
 [`virtualenvwrapper`](https://virtualenvwrapper.readthedocs.org).
 
 ```
-$ mkvirtualenv sheer
-$ workon sheer
+mkvirtualenv sheer
+workon sheer
 ```
 
 Then you can clone the Sheer repository and install the Python 
 requirements using `pip`:
 
 ```shell
-$ git clone https://github.com/cfpb/sheer
-$ pip install -r sheer/requirements.txt
+git clone https://github.com/cfpb/sheer
+pip install -r sheer/requirements.txt
 ```
 
 You can then install Sheer with `pip`. `pip -e` installs Sheer in
@@ -85,7 +85,7 @@ it, and any changes you `git pull` from upstream won't have to be
 installed again.
 
 ```shell
-$ pip install -e sheer
+pip install -e sheer
 ```
 
 ## Quick Start
@@ -94,25 +94,25 @@ This quick start assumes you have an existing Sheer site you want to
 load content for and serve.
 
 ```shell
-$ cd path/to/my/sheer/site
+cd path/to/my/sheer/site
 ```
 
 Index the site's content in Elasticsearch:
 
 ```shell
-$ sheer index
+sheer index
 ```
 
 Serve the site at [http://localhost:7000](http://localhost:7000):
 
 ```shell
-$ sheer serve
+sheer serve
 ```
 
 The site can also be served in "debug" mode:
 
 ```shell
-$ sheer serve --debug
+sheer serve --debug
 ```
 
 ## General Usage
@@ -142,7 +142,7 @@ These are covered in more detail below.
 ## Indexing 
 
 ```shell
-$ sheer index
+sheer index
 ```
 
 Sheer indexing allows configurable loading of content into  [Elasticsearch](http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/docs-index_.html).
@@ -176,7 +176,7 @@ The basic indexing process:
 ### Reindexing
 
 ```shell
-$ sheer index --reindex
+sheer index --reindex
 ```
 
 Destroys the index in Elasticsearch and recreates it, recreating the mappings and reloading all documents.
@@ -184,13 +184,13 @@ Destroys the index in Elasticsearch and recreates it, recreating the mappings an
 ### Partial Indexing
 
 ```shell
-$ sheer index --processors posts
+sheer index --processors posts
 ```
 
 Reindex only content provided by the given [content processors](#content-processors). The documents provided by the given processor will be updated in Elasticsearch.
 
 ```shell
-$ sheer index --processors posts --reindex
+sheer index --processors posts --reindex
 ```
 
 This will destroy the [mappings](#mappings) for the given [content processor](#content-processors) and recreate them, then load the documents provided by the given processor into Elasticsearch.
@@ -315,7 +315,7 @@ A default `_settings/mappings.json`, if it exists, is also passed to Elasticsear
 ## Serving
 
 ```shell
-$ sheer serve
+sheer serve
 ```
 
 Sheer can serve the content it indexes in Elasticsearch via command-line in the foreground or via WSGI. Sheer serves its content using a [Flask](http://flask.pocoo.org/) application. 
