@@ -592,7 +592,7 @@ Returns a JSON-compatible (but *not* JSON-encoded) dictionary of a query hit.
 Public Domain/CC0 1.0
 
 1. [Terms](TERMS.md)
-2. [License](COPYING.txt)
+2. [License](LICENSE)
 3. [CFPB Source Code Policy](https://github.com/cfpb/source-code-policy/)
 
 
