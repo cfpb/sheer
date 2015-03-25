@@ -6,7 +6,9 @@ If you're not familiar with Elasticsearch, it is highly recommended that you rea
 
 * [Requirements](#requirements)
 * [Installation](#installation)
+* [Testing](#testing)
 * [Quick Start](#quick-start)
+* [General Usage](#general-usage)
 * [Indexing](#indexing)
     * [Reindexing](#reindexing)
     * [Partial Indexing](#partial-indexing)
@@ -86,6 +88,25 @@ installed again.
 
 ```shell
 pip install -e sheer
+```
+
+## Testing
+
+To run the Sheer tests, you'll need the Python packages 
+[nose](https://nose.readthedocs.org/en/latest/) and 
+[mock](http://www.voidspace.org.uk/python/mock/) installed. Both can be
+installed via `pip`:
+
+```shell
+pip install nose mock
+```
+
+Both are also installed by the Sheer [`requirements.txt` file](#installation).
+
+To run the tests, simply run:
+
+```shell
+nosetest sheer
 ```
 
 ## Quick Start
