@@ -115,18 +115,19 @@ def index_processor(es, index_name, default_mapping, processor, reindex=False):
     try:
         # Get the document iterator from the processor.
         document_iterator = processor.documents()
+    except IOError:
+        # A requests.exceptions.ConnectionError may be raised if the processor
+        # can't connect to the API endpoint its getting the JSON from.
+        document_iterator = []
+        sys.stderr.write("error making connection for %s" % processor.name)
 
+    try:
         # Iterate over the documents
         i = -1
         for i, document in enumerate(document_iterator):
             index_document(es, index_name, processor, document)
             sys.stdout.write("indexed %s %s \r" % (i + 1, processor.name))
             sys.stdout.flush()
-    except IOError:
-        # A requests.exceptions.ConnectionError may be raised if the processor
-        # can't connect to the API endpoint its getting the JSON from.
-        document_iterator = []
-        sys.stderr.write("error making connection for %s" % processor.name)
     except ValueError:
         # There may be a ValueError (or JSONDecodeError, a subclass of
         # ValueError) raised by json.loads() with the API's supposedly JSON
