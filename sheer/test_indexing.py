@@ -239,12 +239,18 @@ class TestIndexing(object):
         gracefully. This simulates the unavailability and timeout of the
         upstream source of information.
         """
-
         # We want to capture stderr
         sys.stderr = StringIO()
 
-        # Add another mock error processor to the mock_processor json
-        self.mock_processors['more_posts'] = {
+        # Add mock error processors to the mock_processor json. This will let us
+        # have three processors total. Because we're mocking ContentProcessor()
+        # below we don't have to worry about the actual contents of these
+        # dictionaries.
+        self.mock_processors['ioerrs'] = {
+            'url': 'http://test/api/get_posts/',
+            'processor': 'post_processor',
+            'mappings': '_settings/posts_mappings.json'}
+        self.mock_processors['valueerrs'] = {
             'url': 'http://test/api/get_posts/',
             'processor': 'post_processor',
             'mappings': '_settings/posts_mappings.json'}
@@ -255,15 +261,32 @@ class TestIndexing(object):
         mock_exists.return_value = False
         mock_read_json_file.side_effect = [self.mock_processors, {}]
 
-        # A context processor that will raise a ValueError.
-        mock_err_processor = mock.Mock(spec=ContentProcessor)
-        mock_err_processor.name = 'posts'
-        mock_err_processor.processor_name = 'posts_processor'
-        mock_err_processor.mapping.return_value = {}
-        mock_err_processor.documents.side_effect = ValueError("No JSON object could be decoded")
+        # A context processor that will raise an IOError to simulate a
+        # connection failure in requests.
+        mock_ioerr_processor = mock.Mock(spec=ContentProcessor)
+        mock_ioerr_processor.name = 'ioerrs'
+        mock_ioerr_processor.processor_name = 'posts_processor'
+        mock_ioerr_processor.mapping.return_io = {}
+        mock_ioerr_processor.documents.side_effect = IOError("Connection aborted.")
 
-        # Make sure ContentProcessor returns the err processor
-        mock_ContentProcessor.side_effect = [mock_err_processor, self.mock_processor]
+        # A context processor that will raise a ValueError to simulate bad json
+        # being provided by the upstream source.
+        # XXX: To get a ValueErroring generator, we need to mock it here? The
+        # problem is that we want the generator to raise a ValueError only when
+        # next() is called. There doesn't seem to be a way to do that easily
+        # with mock.
+        mock_valueerr_documents_func = mock.MagicMock()
+        mock_valueerr_documents_func.__iter__.side_effect = ValueError("No JSON object could be decoded")
+        mock_valueerr_processor = mock.Mock(spec=ContentProcessor)
+        mock_valueerr_processor.name = 'valueerrs'
+        mock_valueerr_processor.processor_name = 'posts_processor'
+        mock_valueerr_processor.mapping.return_value = {}
+        mock_valueerr_processor.documents.return_value = mock_valueerr_documents_func
+
+        # Make sure ContentProcessor returns the err processors
+        mock_ContentProcessor.side_effect = [mock_ioerr_processor,
+                                             mock_valueerr_processor,
+                                             self.mock_processor]
 
         # Here we assume:
         #   * Index doesn't exist -> should be created
@@ -278,12 +301,14 @@ class TestIndexing(object):
         test_args = AttrDict(processors=[], reindex=False)
         index_location(test_args, self.config)
 
-        # Ensure that we got the error message.
+        # Ensure that we got the error messages.
+        assert 'error making connection' in sys.stderr.getvalue()
         assert 'error reading documents' in sys.stderr.getvalue()
 
         # Ensure that create was called just once, with the appropriate
         # arguments from the non-erroring content processor.
         assert mock_es.create.call_count == 1
+
         mock_es.create.assert_called_with(
             index=self.config['index'],
             doc_type='posts',

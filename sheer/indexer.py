@@ -112,22 +112,27 @@ def index_processor(es, index_name, default_mapping, processor, reindex=False):
                             doc_type=processor.name,
                             body={processor.name: processor.mapping(default_mapping)})
 
-    # Get the document iterator from the processor.
-    # This could raise a value error raised by json.loads() if there is a
-    # connection error, server error, or other error acquiring the data.
     try:
-        document_iterator = enumerate(processor.documents())
-    except ValueError:
-        # print an error message and raise the exception. It should be caught by
-        # this function's caller.
-        sys.stderr.write("error reading documents for %s" % processor.name)
-    else:
+        # Get the document iterator from the processor.
+        document_iterator = processor.documents()
+
+        # Iterate over the documents
         i = -1
-        for i, document in document_iterator:
+        for i, document in enumerate(document_iterator):
             index_document(es, index_name, processor, document)
             sys.stdout.write("indexed %s %s \r" % (i + 1, processor.name))
             sys.stdout.flush()
-
+    except IOError:
+        # A requests.exceptions.ConnectionError may be raised if the processor
+        # can't connect to the API endpoint its getting the JSON from.
+        document_iterator = []
+        sys.stderr.write("error making connection for %s" % processor.name)
+    except ValueError:
+        # There may be a ValueError (or JSONDecodeError, a subclass of
+        # ValueError) raised by json.loads() with the API's supposedly JSON
+        # output.
+        sys.stderr.write("error reading documents for %s" % processor.name)
+    else:
         sys.stdout.write("indexed %s %s \n" % (i + 1, processor.name))
 
 
