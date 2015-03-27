@@ -1,5 +1,8 @@
+# -*- coding: utf-8 -*-
 
+import sys
 import mock
+from StringIO import StringIO
 from .indexer import ContentProcessor, index_location
 from elasticsearch.exceptions import TransportError
 
@@ -215,6 +218,96 @@ class TestIndexing(object):
             index=self.config['index'],
             doc_type='posts',
             body={'posts': {}})
+
+        mock_es.create.assert_called_with(
+            index=self.config['index'],
+            doc_type='posts',
+            id=self.mock_document['_id'],
+            body=self.mock_document)
+
+
+    @mock.patch('sheer.indexer.Elasticsearch')
+    @mock.patch('sheer.indexer.ContentProcessor')
+    @mock.patch('sheer.indexer.read_json_file')
+    @mock.patch('os.path.exists')
+    def test_indexing_failure(self, mock_exists, mock_read_json_file,
+                              mock_ContentProcessor, mock_Elasticsearch):
+        """
+        `sheer index`
+
+        Test the failure of indexing by Sheer, and make sure it fails
+        gracefully. This simulates the unavailability and timeout of the
+        upstream source of information.
+        """
+        # We want to capture stderr
+        sys.stderr = StringIO()
+
+        # Add mock error processors to the mock_processor json. This will let us
+        # have three processors total. Because we're mocking ContentProcessor()
+        # below we don't have to worry about the actual contents of these
+        # dictionaries.
+        self.mock_processors['ioerrs'] = {
+            'url': 'http://test/api/get_posts/',
+            'processor': 'post_processor',
+            'mappings': '_settings/posts_mappings.json'}
+        self.mock_processors['valueerrs'] = {
+            'url': 'http://test/api/get_posts/',
+            'processor': 'post_processor',
+            'mappings': '_settings/posts_mappings.json'}
+
+        # Mock file existing/opening/reading
+        # os.path.exists is only called directly for settings.json and
+        # mappings.json, which are not necessary for our tests.
+        mock_exists.return_value = False
+        mock_read_json_file.side_effect = [self.mock_processors, {}]
+
+        # A context processor that will raise an IOError to simulate a
+        # connection failure in requests.
+        mock_ioerr_processor = mock.Mock(spec=ContentProcessor)
+        mock_ioerr_processor.name = 'ioerrs'
+        mock_ioerr_processor.processor_name = 'posts_processor'
+        mock_ioerr_processor.mapping.return_io = {}
+        mock_ioerr_processor.documents.side_effect = IOError("Connection aborted.")
+
+        # A context processor that will raise a ValueError to simulate bad json
+        # being provided by the upstream source.
+        # XXX: To get a ValueErroring generator, we need to mock it here? The
+        # problem is that we want the generator to raise a ValueError only when
+        # next() is called. There doesn't seem to be a way to do that easily
+        # with mock.
+        mock_valueerr_documents_func = mock.MagicMock()
+        mock_valueerr_documents_func.__iter__.side_effect = ValueError("No JSON object could be decoded")
+        mock_valueerr_processor = mock.Mock(spec=ContentProcessor)
+        mock_valueerr_processor.name = 'valueerrs'
+        mock_valueerr_processor.processor_name = 'posts_processor'
+        mock_valueerr_processor.mapping.return_value = {}
+        mock_valueerr_processor.documents.return_value = mock_valueerr_documents_func
+
+        # Make sure ContentProcessor returns the err processors
+        mock_ContentProcessor.side_effect = [mock_ioerr_processor,
+                                             mock_valueerr_processor,
+                                             self.mock_processor]
+
+        # Here we assume:
+        #   * Index doesn't exist -> should be created
+        #   * Mappings don't exist for processor -> should be created
+        #   * Documents don't exist for processor -> should be created
+        #       * An exception is raised when trying to fetch documents from the
+        #         context processor.
+        mock_es = mock_Elasticsearch.return_value
+        mock_es.indices.exists.return_value = False
+        mock_es.indices.get_mapping.return_value = None
+
+        test_args = AttrDict(processors=[], reindex=False)
+        index_location(test_args, self.config)
+
+        # Ensure that we got the error messages.
+        assert 'error making connection' in sys.stderr.getvalue()
+        assert 'error reading documents' in sys.stderr.getvalue()
+
+        # Ensure that create was called just once, with the appropriate
+        # arguments from the non-erroring content processor.
+        assert mock_es.create.call_count == 1
 
         mock_es.create.assert_called_with(
             index=self.config['index'],

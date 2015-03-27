@@ -60,6 +60,83 @@ class ContentProcessor(object):
             return copy.deepcopy(default_mapping)
 
 
+def index_document(es, index_name, processor, document):
+    """
+    Create the given document from the given content processor in the
+    given Elasticsearch instance for the  given index.
+
+    If the document already exists in Elasticsearch it will be updated.
+    """
+    # Create the document. If it already exists in Elasticsearch an
+    # exception will be raised.
+    try:
+        es.create(index=index_name,
+                doc_type=processor.name,
+                id=document['_id'],
+                body=document)
+    except TransportError, e:
+        # Elasticsearch status code 409 is DocumentAlreadyExistsException
+        # Anything else and we want to bail here.
+        if e.status_code != 409:
+            raise e
+
+        # If the document couldn't be created because it already exists,
+        # update it instead.
+        es.update(index=index_name,
+                doc_type=processor.name,
+                id=document['_id'],
+                body={'doc': document})
+
+
+def index_processor(es, index_name, default_mapping, processor, reindex=False):
+    """
+    Index all the documents provided by the given content processor for
+    the given index in the given Elasticsearch instance.
+
+    If reindex=True and the processor already exists the mapping in
+    Elasticsearch will be destroyed and recreated and all documents will
+    be created anew.
+    """
+    # If the mapping already exists, and we were called with the reindex
+    # flag, remove the mapping.
+    mapping = es.indices.get_mapping(index=index_name, doc_type=processor.name)
+    if mapping and reindex:
+        print "removing existing mapping for %s (%s)" % (processor.name, processor.processor_name)
+        es.indices.delete_mapping(index=index_name, doc_type=processor.name)
+        mapping = {}
+
+    # Then create the mapping if it does not exist
+    if not mapping:
+        print "creating mapping for %s (%s)" % (processor.name, processor.processor_name)
+        es.indices.put_mapping(index=index_name,
+                            doc_type=processor.name,
+                            body={processor.name: processor.mapping(default_mapping)})
+
+    try:
+        # Get the document iterator from the processor.
+        document_iterator = processor.documents()
+    except IOError:
+        # A requests.exceptions.ConnectionError may be raised if the processor
+        # can't connect to the API endpoint its getting the JSON from.
+        document_iterator = []
+        sys.stderr.write("error making connection for %s" % processor.name)
+
+    try:
+        # Iterate over the documents
+        i = -1
+        for i, document in enumerate(document_iterator):
+            index_document(es, index_name, processor, document)
+            sys.stdout.write("indexed %s %s \r" % (i + 1, processor.name))
+            sys.stdout.flush()
+    except ValueError:
+        # There may be a ValueError (or JSONDecodeError, a subclass of
+        # ValueError) raised by json.loads() with the API's supposedly JSON
+        # output.
+        sys.stderr.write("error reading documents for %s" % processor.name)
+    else:
+        sys.stdout.write("indexed %s %s \n" % (i + 1, processor.name))
+
+
 def index_location(args, config):
 
     path = config['location']
@@ -134,44 +211,5 @@ def index_location(args, config):
         selected_processors = [p for p in processors if p.name in args.processors]
 
     for processor in selected_processors:
-        # If the mapping already exists, and we were called with the reindex
-        # flag, remove the mapping.
-        mapping = es.indices.get_mapping(index=index_name, doc_type=processor.name)
-        if mapping and args.reindex:
-            print "removing existing mapping for %s (%s)" % (processor.name, processor.processor_name)
-            es.indices.delete_mapping(index=index_name, doc_type=processor.name)
-            mapping = {}
+        index_processor(es, index_name, default_mapping, processor, reindex=args.reindex)
 
-        # Then create the mapping if it does not exist
-        if not mapping:
-            print "creating mapping for %s (%s)" % (processor.name, processor.processor_name)
-            es.indices.put_mapping(index=index_name,
-                                doc_type=processor.name,
-                                body={processor.name: processor.mapping(default_mapping)})
-
-        i = -1
-        for i, document in enumerate(processor.documents()):
-            # Create the document. If it already exists in Elasticsearch an
-            # exception will be raised.
-            try:
-                es.create(index=index_name,
-                        doc_type=processor.name,
-                        id=document['_id'],
-                        body=document)
-            except TransportError, e:
-                # Elasticsearch status code 409 is DocumentAlreadyExistsException
-                # Anything else and we want to bail here.
-                if e.status_code != 409:
-                    raise e
-
-                # If the document couldn't be created because it already exists,
-                # update it instead.
-                es.update(index=index_name,
-                        doc_type=processor.name,
-                        id=document['_id'],
-                        body={'doc': document})
-
-            sys.stdout.write("indexed %s %s \r" % (i + 1, processor.name))
-            sys.stdout.flush()
-
-        sys.stdout.write("indexed %s %s \n" % (i + 1, processor.name))
