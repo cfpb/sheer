@@ -52,6 +52,8 @@ Running tests requires:
 
 ## Installation
 
+### Elasticsearch
+
 To install Sheer you will first need to install 
 [Elasticsearch](http://www.elasticsearch.org/). This can be acomplished 
 a number of ways, many of which are detailed in 
@@ -63,6 +65,19 @@ brew install elasticsearch
 ```
 
 There are also [Elasticsearch apt and Yum repositories](http://www.elastic.co/guide/en/elasticsearch/reference/current/setup-repositories.html).
+
+Before running Sheer, you will also need to ensure that Elasticsearch is
+running. When installing Elasticsearch on Mac OS X installed via
+Homebrew, Homebrew will provide some guidance like:
+
+```shell
+To have launchd start elasticsearch at login:
+    ln -sfv <homebrew location>/elasticsearch/*.plist ~/Library/LaunchAgents
+Then to load elasticsearch now:
+    launchctl load ~/Library/LaunchAgents/homebrew.mxcl.elasticsearch.plist
+```
+
+### Sheer
 
 To install Sheer itself, it is recommended to create a 
 [`virtualenv`](https://virtualenv.pypa.io/en/latest/) using 
