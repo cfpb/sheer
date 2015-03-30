@@ -16,7 +16,7 @@ ELASTICSEARCH_HOSTS = os.environ.get('SHEER_ELASTICSEARCH_HOSTS',
 ELASTICSEARCH_INDEX = os.environ.get('SHEER_ELASTICSEARCH_INDEX', 'content')
 DEBUG = bool(os.environ.get('SHEER_DEBUG', False))
 
-if __name__ == '__main__':
+def run_cli():
 
     parser = argparse.ArgumentParser(prog='sheer',
                                      description="document loader and dev server for Sheer, a content publishing system")
@@ -62,3 +62,6 @@ if __name__ == '__main__':
                   elasticsearch=parse_es_hosts(args.elasticsearch),
                   index=args.index)
     args.func(args, config)
+
+if __name__ == '__main__':
+    run_cli()
