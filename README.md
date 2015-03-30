@@ -58,7 +58,7 @@ To install Sheer you will first need to install
 [Elasticsearch](http://www.elasticsearch.org/). This can be acomplished 
 a number of ways, many of which are detailed in 
 [in the Elasticsearch documentation](http://www.elastic.co/guide/en/elasticsearch/reference/current/setup.html). 
-On Mac OS X it can be installed using [homebrew](http://brew.sh/):
+On Mac OS X it can be installed using [Homebrew](http://brew.sh/):
 
 ```
 brew install elasticsearch
