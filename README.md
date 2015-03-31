@@ -54,7 +54,7 @@ Running tests requires:
 
 ### Elasticsearch
 
-To install Sheer you will first need to install 
+To run Sheer you will first need to install 
 [Elasticsearch](http://www.elasticsearch.org/). This can be acomplished 
 a number of ways, many of which are detailed in 
 [in the Elasticsearch documentation](http://www.elastic.co/guide/en/elasticsearch/reference/current/setup.html). 
