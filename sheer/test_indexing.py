@@ -79,10 +79,6 @@ class TestIndexing(object):
         index_location(test_args, self.config)
 
         mock_es.indices.create.assert_called_with(index=self.config['index'])
-        mock_es.indices.put_mapping.assert_called_with(
-            index=self.config['index'],
-            doc_type='posts',
-            body={'posts': {}})
         mock_es.create.assert_called_with(
             index=self.config['index'],
             doc_type='posts',
@@ -125,10 +121,6 @@ class TestIndexing(object):
 
         mock_es.indices.delete.assert_called_with(self.config['index'])
         mock_es.indices.create.assert_called_with(index=self.config['index'])
-        mock_es.indices.put_mapping.assert_called_with(
-            index=self.config['index'],
-            doc_type='posts',
-            body={'posts': {}})
         mock_es.create.assert_called_with(
             index=self.config['index'],
             doc_type='posts',
@@ -214,11 +206,6 @@ class TestIndexing(object):
         mock_es.indices.delete_mapping.assert_called_with(
             index=self.config['index'],
             doc_type='posts')
-        mock_es.indices.put_mapping.assert_called_with(
-            index=self.config['index'],
-            doc_type='posts',
-            body={'posts': {}})
-
         mock_es.create.assert_called_with(
             index=self.config['index'],
             doc_type='posts',
