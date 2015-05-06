@@ -12,12 +12,8 @@ else:
     from collections import OrderedDict
     import json
 
-
-import copy
 import glob
 import importlib
-
-from csv import DictReader
 
 from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import TransportError
@@ -51,13 +47,13 @@ class ContentProcessor(object):
     def documents(self):
         return self.processor_module.documents(self.name, **self.kwargs)
 
-    def mapping(self, default_mapping):
+    def mapping(self):
         if 'mappings' in self.kwargs:
             return read_json_file(self.kwargs['mappings'])
         if hasattr(self.processor_module, 'mappings'):
             return self.processor_module.mappings(self.name, **self.kwargs)
         else:
-            return copy.deepcopy(default_mapping)
+            return None
 
 
 def index_document(es, index_name, processor, document):
@@ -71,9 +67,9 @@ def index_document(es, index_name, processor, document):
     # exception will be raised.
     try:
         es.create(index=index_name,
-                doc_type=processor.name,
-                id=document['_id'],
-                body=document)
+                  doc_type=processor.name,
+                  id=document['_id'],
+                  body=document)
     except TransportError, e:
         # Elasticsearch status code 409 is DocumentAlreadyExistsException
         # Anything else and we want to bail here.
@@ -83,12 +79,12 @@ def index_document(es, index_name, processor, document):
         # If the document couldn't be created because it already exists,
         # update it instead.
         es.update(index=index_name,
-                doc_type=processor.name,
-                id=document['_id'],
-                body={'doc': document})
+                  doc_type=processor.name,
+                  id=document['_id'],
+                  body={'doc': document})
 
 
-def index_processor(es, index_name, default_mapping, processor, reindex=False):
+def index_processor(es, index_name, processor, reindex=False):
     """
     Index all the documents provided by the given content processor for
     the given index in the given Elasticsearch instance.
@@ -108,9 +104,13 @@ def index_processor(es, index_name, default_mapping, processor, reindex=False):
     # Then create the mapping if it does not exist
     if not mapping:
         print "creating mapping for %s (%s)" % (processor.name, processor.processor_name)
-        es.indices.put_mapping(index=index_name,
-                            doc_type=processor.name,
-                            body={processor.name: processor.mapping(default_mapping)})
+        # Only manually create the mapping if one is specified.
+        # Otherwise, let Elasticsearch create a mapping
+        mapping_supplied = processor.mapping()
+        if mapping_supplied:
+            es.indices.put_mapping(index=index_name,
+                                   doc_type=processor.name,
+                                   body={processor.name: mapping_supplied})
 
     try:
         # Get the document iterator from the processor.
@@ -150,7 +150,6 @@ def index_location(args, config):
     # need to talk to elasticsearch
 
     settings_path = os.path.join(path, '_settings/settings.json')
-    default_mapping_path = os.path.join(path, '_defaults/mappings.json')
     processors_path = os.path.join(path, '_settings/processors.json')
 
     es = Elasticsearch(config["elasticsearch"])
@@ -194,16 +193,6 @@ def index_location(args, config):
                               processor="sheer.processors.filesystem")
         processors.append(ContentProcessor(processor_name, **processor_args))
 
-    # Load default mapping (or not)
-    if os.path.exists(default_mapping_path):
-        try:
-            default_mapping = read_json_file(default_mapping_path)
-        except ValueError:
-            sys.exit("default mapping present, but is not valid JSON")
-
-    else:
-        default_mapping = {}
-
     # If any specific content processors were selected, we run them. Otherwise
     # we run all of them.
     selected_processors = processors
@@ -211,5 +200,4 @@ def index_location(args, config):
         selected_processors = [p for p in processors if p.name in args.processors]
 
     for processor in selected_processors:
-        index_processor(es, index_name, default_mapping, processor, reindex=args.reindex)
-
+        index_processor(es, index_name, processor, reindex=args.reindex)
