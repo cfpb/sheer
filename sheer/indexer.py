@@ -111,7 +111,10 @@ def index_processor(es, index_name, processor, reindex=False):
             es.indices.put_mapping(index=index_name,
                                    doc_type=processor.name,
                                    body={processor.name: mapping_supplied})
-
+    # Keep track of whether the indexing process is successful
+    # This is so the end user and/or Jenkins knows the job failed if everything
+    # didn't index 100%
+    index_success = True
     try:
         # Get the document iterator from the processor.
         document_iterator = processor.documents()
@@ -120,6 +123,7 @@ def index_processor(es, index_name, processor, reindex=False):
         # can't connect to the API endpoint its getting the JSON from.
         document_iterator = []
         sys.stderr.write("error making connection for %s" % processor.name)
+        index_success = False
 
     try:
         # Iterate over the documents
@@ -133,8 +137,10 @@ def index_processor(es, index_name, processor, reindex=False):
         # ValueError) raised by json.loads() with the API's supposedly JSON
         # output.
         sys.stderr.write("error reading documents for %s" % processor.name)
+        index_success = False
     else:
         sys.stdout.write("indexed %s %s \n" % (i + 1, processor.name))
+    return index_success
 
 
 def index_location(args, config):
@@ -199,5 +205,15 @@ def index_location(args, config):
     if args.processors and len(args.processors) > 0:
         selected_processors = [p for p in processors if p.name in args.processors]
 
+    failed_processors = []
     for processor in selected_processors:
-        index_processor(es, index_name, processor, reindex=args.reindex)
+        index_sucess = index_processor(es, 
+                                       index_name,
+                                       processor,
+                                       reindex=args.reindex)
+        if not index_sucess:
+            failed_processors.append(processor.name)
+    # Exit with an error code != 0 if there were any issues with indexing
+    if failed_processors:
+        sys.exit("Indexing the following processor(s) failed: {}".format(
+            ", ".join(failed_processors)))
