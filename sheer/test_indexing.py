@@ -6,10 +6,12 @@ from StringIO import StringIO
 from .indexer import ContentProcessor, index_location
 from elasticsearch.exceptions import TransportError
 
+
 class AttrDict(dict):
     def __init__(self, *args, **kwargs):
         super(AttrDict, self).__init__(*args, **kwargs)
         self.__dict__ = self
+
 
 class TestIndexing(object):
     """
@@ -32,7 +34,7 @@ class TestIndexing(object):
 
         self.config = {'location': '.',
                        'elasticsearch': '',
-                       'index': 'content',}
+                       'index': 'content'}
 
         # This is our mock ContentProcessor. It will return mappings and
         # documents for a particular document type, 'posts' in our mock
@@ -43,7 +45,6 @@ class TestIndexing(object):
         self.mock_processor.processor_name = 'posts_processor'
         self.mock_processor.mapping.return_value = {}
         self.mock_processor.documents.return_value = iter([self.mock_document])
-
 
     @mock.patch('sheer.indexer.Elasticsearch')
     @mock.patch('sheer.indexer.ContentProcessor')
@@ -85,7 +86,6 @@ class TestIndexing(object):
             id=self.mock_document['_id'],
             body=self.mock_document)
 
-
     @mock.patch('sheer.indexer.Elasticsearch')
     @mock.patch('sheer.indexer.ContentProcessor')
     @mock.patch('sheer.indexer.read_json_file')
@@ -126,7 +126,6 @@ class TestIndexing(object):
             doc_type='posts',
             id=self.mock_document['_id'],
             body=self.mock_document)
-
 
     @mock.patch('sheer.indexer.Elasticsearch')
     @mock.patch('sheer.indexer.ContentProcessor')
@@ -212,7 +211,6 @@ class TestIndexing(object):
             id=self.mock_document['_id'],
             body=self.mock_document)
 
-
     @mock.patch('sheer.indexer.Elasticsearch')
     @mock.patch('sheer.indexer.ContentProcessor')
     @mock.patch('sheer.indexer.read_json_file')
@@ -286,7 +284,11 @@ class TestIndexing(object):
         mock_es.indices.get_mapping.return_value = None
 
         test_args = AttrDict(processors=[], reindex=False)
-        index_location(test_args, self.config)
+        try:
+            index_location(test_args, self.config)
+        except SystemExit, s:
+            assert s.code == \
+                'Indexing the following processor(s) failed: ioerrs, valueerrs'
 
         # Ensure that we got the error messages.
         assert 'error making connection' in sys.stderr.getvalue()
@@ -301,4 +303,3 @@ class TestIndexing(object):
             doc_type='posts',
             id=self.mock_document['_id'],
             body=self.mock_document)
-
