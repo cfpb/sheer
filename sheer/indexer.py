@@ -16,7 +16,7 @@ import glob
 import importlib
 
 from elasticsearch import Elasticsearch
-from elasticsearch.exceptions import TransportError
+from elasticsearch.helpers import bulk
 
 from sheer.utility import add_site_libs
 from sheer.processors.helpers import IndexHelper
@@ -54,34 +54,6 @@ class ContentProcessor(object):
             return self.processor_module.mappings(self.name, **self.kwargs)
         else:
             return None
-
-
-def index_document(es, index_name, processor, document):
-    """
-    Create the given document from the given content processor in the
-    given Elasticsearch instance for the  given index.
-
-    If the document already exists in Elasticsearch it will be updated.
-    """
-    # Create the document. If it already exists in Elasticsearch an
-    # exception will be raised.
-    try:
-        es.create(index=index_name,
-                  doc_type=processor.name,
-                  id=document['_id'],
-                  body=document)
-    except TransportError, e:
-        # Elasticsearch status code 409 is DocumentAlreadyExistsException
-        # Anything else and we want to bail here.
-        if e.status_code != 409:
-            raise e
-
-        # If the document couldn't be created because it already exists,
-        # update it instead.
-        es.update(index=index_name,
-                  doc_type=processor.name,
-                  id=document['_id'],
-                  body={'doc': document})
 
 
 def index_processor(es, index_name, processor, reindex=False):
@@ -126,12 +98,7 @@ def index_processor(es, index_name, processor, reindex=False):
         index_success = False
 
     try:
-        # Iterate over the documents
-        i = -1
-        for i, document in enumerate(document_iterator):
-            index_document(es, index_name, processor, document)
-            sys.stdout.write("indexed %s %s \r" % (i + 1, processor.name))
-            sys.stdout.flush()
+        result = bulk(es, document_iterator)
     except ValueError:
         # There may be a ValueError (or JSONDecodeError, a subclass of
         # ValueError) raised by json.loads() with the API's supposedly JSON
@@ -139,7 +106,7 @@ def index_processor(es, index_name, processor, reindex=False):
         sys.stderr.write("error reading documents for %s" % processor.name)
         index_success = False
     else:
-        sys.stdout.write("indexed %s %s \n" % (i + 1, processor.name))
+        sys.stdout.write("indexed %s %s \n" % (result[0], processor.name))
     return index_success
 
 
@@ -207,7 +174,7 @@ def index_location(args, config):
 
     failed_processors = []
     for processor in selected_processors:
-        index_sucess = index_processor(es, 
+        index_sucess = index_processor(es,
                                        index_name,
                                        processor,
                                        reindex=args.reindex)
