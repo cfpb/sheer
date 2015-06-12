@@ -129,6 +129,15 @@ def app_with_config(config):
         context = {'current_date': datetime.datetime.now()}
         return context
 
+    @app.template_filter(name='possibles_to_list')
+    def possibles_to_list(possibles):
+        """
+        This converts the output of 'possible_values_for' to a list, making it
+        possible to check if an item is in an aggregation, from within the
+        template.
+        """
+        return [item['key'] for item in possibles]
+
     @app.template_filter(name='date')
     def date_filter(value, format="%Y-%m-%d"):
         return date_formatter(value, format)
