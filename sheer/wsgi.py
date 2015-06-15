@@ -5,6 +5,7 @@ import functools
 import codecs
 import markdown
 import datetime
+from urlparse import urlparse
 
 import flask
 import elasticsearch
@@ -137,6 +138,14 @@ def app_with_config(config):
         template.
         """
         return [item['key'] for item in possibles]
+
+    @app.template_filter(name='domain_name')
+    def domain_name(url):
+        """
+        This converts a full URL to the domain name, to be used when
+        checking to see if a URL is in our list of vetted domains.
+        """
+        return urlparse(url).netloc.replace('www.', '')
 
     @app.template_filter(name='date')
     def date_filter(value, format="%Y-%m-%d"):
