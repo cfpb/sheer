@@ -27,7 +27,7 @@ def add_to_sheer(app):
             query_finder = default_query_finder()
             query = getattr(query_finder, name) or flask.abort(404)
             request = flask.request
-            return query.search_with_url_arguments()
+            return query.search()
 
     api.add_resource(QueryResource, '/api/v1/q/<name>.json')
 

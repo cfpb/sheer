@@ -70,7 +70,7 @@ def add_feeds_to_sheer(app):
         atom_feed = AtomFeed(**feed.__dict__)
         query_finder = QueryFinder()
         query = getattr(query_finder, name) or flask.abort(404)
-        items = query.search_with_url_arguments()
+        items = query.search()
 
         for item in items:
             entry = Entry(item, settings)

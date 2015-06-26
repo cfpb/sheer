@@ -400,7 +400,7 @@ For example, within a [Jinja2 template](http://jinja.pocoo.org/), one might do t
 
 ```jinja
 {% set query = queries.posts %}
-{% set posts = query.search_with_url_arguments(size=10) %}
+{% set posts = query.search(size=10) %}
 {%- for post in posts %}
 	...
 {% endfor %}
@@ -416,7 +416,7 @@ Optionally takes additional keyword arguments corrosponding to the "mlt" paramet
 
 ```jinja
 {% set query = queries.posts %}
-{% set posts = query.search_with_url_arguments(size=10) %}
+{% set posts = query.search(size=10) %}
 {%- for post in posts %}
 	...
     {% for similar in more_like_this(post) %}
@@ -513,10 +513,10 @@ File lookups are done on the fly and a new `Query` instance is created every tim
 ```python
 >>> queries = QueryFinder()
 >>> posts_query = queries.posts
->>> posts_results = queries.posts.search_with_url_arguments(size=10)
+>>> posts_results = queries.posts.search(size=10)
 ```
 
-##### `search_with_url_arguments(aggregations=None, **kwargs)`
+##### `search(aggregations=None, **kwargs)`
 
 Perform the search with the given keyword arguments, returning a [`QueryResult`](#queryresult) object.
 
@@ -537,7 +537,7 @@ For example, `possible_values_for('category', doc_type='posts')` would return th
 ```python
 >>> queries = QueryFinder()
 >>> posts_query = queries.posts
->>> posts_results = queries.posts.search_with_url_arguments(size=10)
+>>> posts_results = queries.posts.search(size=10)
 >>> for result_hit in post_results:
 >>>		...
 ```
@@ -588,7 +588,7 @@ Each of the JSON object's properties would be accessible as a `QueryHit` object'
 ```python
 >>> queries = QueryFinder()
 >>> posts_query = queries.posts
->>> posts_results = queries.posts.search_with_url_arguments(size=10)
+>>> posts_results = queries.posts.search(size=10)
 >>> for result_hit in post_results:
 >>>		print result_hit.title, result_hit.author
 ```

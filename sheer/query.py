@@ -178,7 +178,7 @@ class Query(object):
         self.__results = None
         self.json_safe = json_safe
 
-    def search_with_url_arguments(self, aggregations=None, **kwargs):
+    def search(self, aggregations=None, use_url_arguments=True, **kwargs):
         query_file = json.loads(file(self.filename).read())
         query_dict = query_file['query']
 
@@ -200,10 +200,17 @@ class Query(object):
         request = flask.request
 
         # Add in filters from the template.
-        new_multidict = request.args.copy()
+        new_multidict = MultiDict()
+        # First add the url arguments if requested
+        if use_url_arguments:
+            new_multidict = request.args.copy()
+        # Next add the arguments from the search() function used in the
+        # template
         for key, value in filter_args.items():
             new_multidict.add(key, value)
-        url_filters = filter_dsl_from_multidict(new_multidict)
+
+        filters = filter_dsl_from_multidict(new_multidict)
+
         args_flat = request.args.to_dict(flat=True)
         query_body = {}
 
@@ -212,7 +219,7 @@ class Query(object):
             if type(aggregations) is str:
                 aggregations = [aggregations] # so we can treat it as a list
             for fieldname in aggregations:
-                aggs_dsl[fieldname] = {'terms': 
+                aggs_dsl[fieldname] = {'terms':
                     {'field': fieldname, 'size': 10000}}
             query_body['aggs'] = aggs_dsl
         else:
@@ -225,9 +232,9 @@ class Query(object):
                 [(k, v) for k, v in args_flat.items() if v])
             query_dict.update(args_flat_filtered)
             query_body['query'] = {'filtered': {'filter': {}}}
-            if url_filters:
+            if filters:
                 query_body['query']['filtered']['filter'][
-                    'and'] = [f for f in url_filters]
+                    'and'] = [f for f in filters]
 
             if 'filters' in query_file:
                 if 'and' not in query_body['query']['filtered']['filter']:
@@ -244,15 +251,12 @@ class Query(object):
         return QueryResults(response, pagenum)
 
     def possible_values_for(self, field, **kwargs):
-        results = self.search_with_url_arguments(aggregations=[field], **kwargs)
+        results = self.search(aggregations=[field], **kwargs)
         return results.aggregations(field)
 
     @property
     def results(self):
         if self.__results:
-            return self.__results
-        else:
-            self.search()
             return self.__results
 
 
