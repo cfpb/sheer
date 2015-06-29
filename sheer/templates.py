@@ -1,11 +1,15 @@
 import datetime
 import flask
 from dateutil import parser
+from pytz import timezone
 
 
-def date_formatter(value, format="%Y-%m-%d"):
+def date_formatter(value, format="%Y-%m-%d", tz='America/New_York'):
     if type(value) not in [datetime.datetime, datetime.date]:
-        dt = parser.parse(value, default=datetime.date.today().replace(day=1))
+        date = parser.parse(value, default=datetime.datetime.today().replace(day=1))
+        naive = date.replace(tzinfo=None)
+        dt = timezone(tz).localize(naive)
+        print dt.tzinfo
     else:
         dt = value
 
