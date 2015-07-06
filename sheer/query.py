@@ -311,8 +311,8 @@ def add_query_utilities(app):
         return date.astimezone(timezone('UTC'))
 
     def when(starttime, endtime):
-        start = convert_to_datetime(starttime['date'])
-        end = convert_to_datetime(endtime['date'])
+        start = convert_to_datetime(starttime)
+        end = convert_to_datetime(endtime)
         if start > datetime.datetime.now(timezone('UTC')):
             return 'future'
         elif end <= datetime.datetime.now(timezone('UTC')):
