@@ -148,8 +148,8 @@ def app_with_config(config):
         return urlparse(url).netloc.replace('www.', '')
 
     @app.template_filter(name='date')
-    def date_filter(value, format="%Y-%m-%d"):
-        return date_formatter(value, format)
+    def date_filter(value, format="%Y-%m-%d", tz="America/New_York"):
+        return date_formatter(value, format, tz)
 
     @app.template_filter(name='markdown')
     def markdown_filter(raw_text):
