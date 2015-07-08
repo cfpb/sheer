@@ -9,6 +9,8 @@ import dateutil.parser
 
 from time import mktime, strptime
 import datetime
+from dateutil import parser
+from pytz import timezone
 
 from werkzeug.urls import url_encode
 from werkzeug.datastructures import MultiDict
@@ -304,8 +306,25 @@ def add_query_utilities(app):
         raw_results = es.get(index=es_index, doc_type=doctype, id=docid)
         return QueryHit(raw_results)
 
+    def convert_to_datetime(timestamp):
+        date = parser.parse(timestamp)
+        if not date.tzinfo:
+            date = date.replace(tzinfo=timezone('America/New_York'))
+        return date.astimezone(timezone('UTC'))
+
+    def when(starttime, endtime):
+        start = convert_to_datetime(starttime)
+        end = convert_to_datetime(endtime)
+        if start >= datetime.datetime.now(timezone('UTC')):
+            return 'future'
+        elif end <= datetime.datetime.now(timezone('UTC')):
+            return 'past'
+        else:
+            return 'present'
+
     @app.context_processor
     def query_utility_context_processor():
         context = {'more_like_this': more_like_this,
-                   'get_document': get_document}
+                   'get_document': get_document,
+                   'when': when}
         return context
