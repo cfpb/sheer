@@ -308,12 +308,14 @@ def add_query_utilities(app):
 
     def convert_to_datetime(timestamp):
         date = parser.parse(timestamp)
+        if not date.tzinfo:
+            date = date.replace(tzinfo=timezone('America/New_York'))
         return date.astimezone(timezone('UTC'))
 
     def when(starttime, endtime):
         start = convert_to_datetime(starttime)
         end = convert_to_datetime(endtime)
-        if start > datetime.datetime.now(timezone('UTC')):
+        if start >= datetime.datetime.now(timezone('UTC')):
             return 'future'
         elif end <= datetime.datetime.now(timezone('UTC')):
             return 'past'
