@@ -98,7 +98,7 @@ def index_processor(es, index_name, processor, reindex=False):
         index_success = False
 
     try:
-        result = bulk(es, document_iterator)
+        result = bulk(es, document_iterator, index = index_name)
     except ValueError:
         # There may be a ValueError (or JSONDecodeError, a subclass of
         # ValueError) raised by json.loads() with the API's supposedly JSON
