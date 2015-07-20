@@ -3,6 +3,7 @@
 import argparse
 import os
 import logging
+import pkg_resources
 
 import sheer.indexer
 import sheer.server
@@ -10,17 +11,22 @@ import sheer.builder
 
 from sheer.utility import parse_es_hosts
 
+
+
 LOCATION = os.environ.get('SHEER_LOCATION', os.getcwd())
 ELASTICSEARCH_HOSTS = os.environ.get('SHEER_ELASTICSEARCH_HOSTS',
                                      'localhost:9200')
 ELASTICSEARCH_INDEX = os.environ.get('SHEER_ELASTICSEARCH_INDEX', 'content')
 DEBUG = bool(os.environ.get('SHEER_DEBUG', False))
 
+VERSION = pkg_resources.require('sheer')[0].version
+
 def run_cli():
 
     parser = argparse.ArgumentParser(prog='sheer',
                                      description="document loader and dev server for Sheer, a content publishing system.")
 
+    parser.add_argument('--version', action='version', version="sheer %s" % VERSION) 
     subparsers = parser.add_subparsers()
 
     index_parser = subparsers.add_parser('index',
