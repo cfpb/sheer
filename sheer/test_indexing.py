@@ -84,7 +84,8 @@ class TestIndexing(object):
 
         mock_es.indices.create.assert_called_with(index=self.config['index'])
         mock_bulk.assert_called_with(mock_es,
-                                     self.mock_processor.documents())
+                                     self.mock_processor.documents(),
+                                     index='content')
 
     @mock.patch('sheer.indexer.bulk')
     @mock.patch('sheer.indexer.Elasticsearch')
@@ -123,7 +124,8 @@ class TestIndexing(object):
         mock_es.indices.delete.assert_called_with(self.config['index'])
         mock_es.indices.create.assert_called_with(index=self.config['index'])
         mock_bulk.assert_called_with(mock_es,
-                                     self.mock_processor.documents())
+                                     self.mock_processor.documents(),
+                                     index='content')
 
     @mock.patch('sheer.indexer.bulk')
     @mock.patch('sheer.indexer.Elasticsearch')
@@ -164,7 +166,8 @@ class TestIndexing(object):
         test_args = AttrDict(processors=['posts'], reindex=False)
         index_location(test_args, self.config)
         mock_bulk.assert_called_with(mock_es,
-                                     self.mock_processor.documents())
+                                     self.mock_processor.documents(),
+                                     index='content')
 
     @mock.patch('sheer.indexer.bulk')
     @mock.patch('sheer.indexer.Elasticsearch')
@@ -204,7 +207,8 @@ class TestIndexing(object):
             index=self.config['index'],
             doc_type='posts')
         mock_bulk.assert_called_with(mock_es,
-                                     self.mock_processor.documents())
+                                     self.mock_processor.documents(),
+                                     index='content')
 
     @mock.patch('sheer.indexer.bulk')
     @mock.patch('sheer.indexer.Elasticsearch')
@@ -272,7 +276,8 @@ class TestIndexing(object):
         assert 'error making connection' in sys.stderr.getvalue()
 
         mock_bulk.assert_called_with(mock_es,
-                                     self.mock_processor.documents())
+                                     self.mock_processor.documents(),
+                                     index='content')
 
     @mock.patch('sheer.indexer.bulk')
     @mock.patch('sheer.indexer.Elasticsearch')
